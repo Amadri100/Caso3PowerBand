@@ -1,0 +1,1 @@
+Todos los valores constantes deben estar en util.Constantes
