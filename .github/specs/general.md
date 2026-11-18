@@ -119,7 +119,7 @@ y remotos.
 ### Maven
 
 - Se utiliza Maven para compilar el proyecto y administrar sus dependencias.
-- El proyecto usa Java 17.
+- El proyecto usa Java 21.
 
 ### Instrumentos
 
