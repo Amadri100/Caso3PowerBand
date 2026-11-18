@@ -18,7 +18,7 @@ public final class LoggerPowerBand {
 
     private final Path carpetaLogs;
 
-    public LoggerPowerBand(Path carpetaLogs) {
+    private LoggerPowerBand(Path carpetaLogs) {
         this.carpetaLogs = Objects.requireNonNull(carpetaLogs, "carpetaLogs");
     }
 
