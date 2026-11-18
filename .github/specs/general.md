@@ -38,11 +38,18 @@ y remotos.
 
 - Clase final con constructor privado.
 - Contiene las constantes compartidas por el programa.
+- Agrupa los puertos de red, tamaños de registros, rutas de archivos y categorías
+  de registro.
+- No contiene configuraciones modificables por el usuario.
 
 #### Configuraciones
 
 - Clase final de configuración global.
 - Expone las opciones modificables de la aplicación.
+- Permite consultar el host y el puerto usados por los sintetizadores.
+- Incluye el puerto UDP predeterminado `57117`.
+- Los componentes reciben o consultan la configuración común, sin duplicar los
+  valores de conexión.
 
 #### Otros
 
@@ -51,6 +58,11 @@ y remotos.
 ### logging
 
 - Registro de eventos, grabación de sesiones y manejo centralizado de logs.
+- Los registros se guardan bajo `powerband/logs`, no junto a las grabaciones.
+- Las categorías admitidas son `comando`, `info` y `error`.
+- Cada entrada identifica categoría, momento y representación textual del
+  objeto registrado.
+- Los errores de dispositivos no detienen las demás entradas.
 
 ### archivos
 
