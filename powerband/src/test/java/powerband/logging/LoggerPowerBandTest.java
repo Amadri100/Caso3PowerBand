@@ -18,7 +18,9 @@ class LoggerPowerBandTest {
 
     @Test
     void registraCategoriasYMensajeToString() throws Exception {
-        LoggerPowerBand logger = new LoggerPowerBand(carpetaTemporal);
+
+        LoggerPowerBand.cambiarPath(carpetaTemporal);
+        LoggerPowerBand logger = LoggerPowerBand.getInstance();
 
         logger.registrarComando("playPiano");
         logger.registrarInfo("conectado");
@@ -34,7 +36,8 @@ class LoggerPowerBandTest {
 
     @Test
     void incluyeUbicacionEnErroresDeArchivo() throws Exception {
-        LoggerPowerBand logger = new LoggerPowerBand(carpetaTemporal);
+        LoggerPowerBand.cambiarPath(carpetaTemporal);
+        LoggerPowerBand logger = LoggerPowerBand.getInstance();
 
         logger.registrarErrorArchivo("archivo invalido",
                 "powerband/recordings/recordings.music");
@@ -48,7 +51,8 @@ class LoggerPowerBandTest {
 
     @Test
     void rechazaObjetoVacio() {
-        LoggerPowerBand logger = new LoggerPowerBand(carpetaTemporal);
+        LoggerPowerBand.cambiarPath(carpetaTemporal);
+        LoggerPowerBand logger = LoggerPowerBand.getInstance();
 
         assertThrows(IllegalArgumentException.class,
                 () -> logger.registrarInfo(" "));
@@ -56,7 +60,8 @@ class LoggerPowerBandTest {
 
     @Test
     void usaToStringDelObjeto() throws Exception {
-        LoggerPowerBand logger = new LoggerPowerBand(carpetaTemporal);
+        LoggerPowerBand.cambiarPath(carpetaTemporal);
+        LoggerPowerBand logger = LoggerPowerBand.getInstance();
         Object objeto = new Object() {
             @Override
             public String toString() {

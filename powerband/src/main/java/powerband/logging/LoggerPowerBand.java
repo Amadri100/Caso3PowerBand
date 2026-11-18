@@ -13,17 +13,20 @@ import powerband.util.Constantes;
 
 public final class LoggerPowerBand {
 
+    private static Path carpetaLogs = Paths.get(Constantes.RUTA_LOGS);
+
     private static final LoggerPowerBand INSTANCIA =
-            new LoggerPowerBand(Paths.get(Constantes.RUTA_LOGS));
+            new LoggerPowerBand();
 
-    private final Path carpetaLogs;
-
-    private LoggerPowerBand(Path carpetaLogs) {
-        this.carpetaLogs = Objects.requireNonNull(carpetaLogs, "carpetaLogs");
+    private LoggerPowerBand() {
     }
 
     public static LoggerPowerBand getInstance() {
         return INSTANCIA;
+    }
+
+    public static void cambiarPath(Path path) {
+        carpetaLogs = path;
     }
 
     public void registrarComando(Object objeto) {
