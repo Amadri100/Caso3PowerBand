@@ -37,7 +37,7 @@ binarias o textuales y las clases Java responsables de leerlos y escribirlos.
 
 - Las entradas de log se escriben bajo `powerband/logs`.
 - Este documento no usa los tamaños ni formatos de `recordings.*`.
-- Una entrada contiene categoría, instante y representación textual del objeto.
+- Una entrada contiene categoría(enum), instante y representación textual del objeto.
 - Las categorías son `comando`, `info` y `error`.
 - La escritura recibe el evento como objeto o texto y usa `toString()` para
   registrar su descripción.

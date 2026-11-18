@@ -13,6 +13,8 @@ public final class Constantes {
     public static final String CATEGORIA_INFO = "info";
     public static final String CATEGORIA_ERROR = "error";
 
+    public static final int[] SINTETIZADORES_INDICES = {1,2,3}; //Piano, bajo, organo
+
     public static final int LONGITUD_MAXIMA_NOMBRE = 64;
     public static final int LONGITUD_FECHA = 24;
     public static final int TAMANO_POSICION_BYTES = 8;
