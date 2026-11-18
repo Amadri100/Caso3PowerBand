@@ -9,8 +9,54 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <tarsos-dsp.version>2.4.1</tarsos-dsp.version>
+        <jinput.version>2.0.10</jinput.version>
+        <jpen.version>2.2.1</jpen.version>
     </properties>
 
+    <dependencies>
+        <!-- Captura y procesamiento de audio -->
+        <dependency>
+            <groupId>com.github.st-h</groupId>
+            <artifactId>TarsosDSP</artifactId>
+            <version>${tarsos-dsp.version}</version>
+        </dependency>
+
+        <!-- Entrada de controles de juegos -->
+        <dependency>
+            <groupId>net.java.jinput</groupId>
+            <artifactId>jinput</artifactId>
+            <version>${jinput.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.jinput</groupId>
+            <artifactId>jinput</artifactId>
+            <version>${jinput.version}</version>
+            <classifier>natives-all</classifier>
+        </dependency>
+
+        <!-- Posicion y presion del lapiz -->
+        <dependency>
+            <groupId>io.github.thobbs</groupId>
+            <artifactId>jpen</artifactId>
+            <version>${jpen.version}</version>
+            <type>nar</type>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
