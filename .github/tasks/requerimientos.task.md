@@ -12,8 +12,8 @@ updated: 2026-11-18
 - [x] R-005 | Crear `util.Configuraciones` (final): host, puerto (por defecto `Constantes`) y opciones modificables | status: done | deps: R-004
 - [x] R-006 | Crear el componente de logging: categoría, momento y `toString()` del objeto; escritura bajo `powerband/logs`; incluye ubicación en errores de archivos | status: done | deps: R-004
 - [x] R-007 | Crear los enums `IdSintetizador` (piano, bajo, órgano) y `TipoAccion` (puntual, inicio, actualización, finalización) | status: done | deps: R-001
-- [ ] R-008 | Definir la interfaz `Sintetizador` (paquete `sintetizadores`): `id()`, ejecutar una acción con `TipoAccion` y parámetros, y liberar todas las notas | status: todo | deps: R-007
-- [ ] R-009 | Definir la interfaz `Comando` (paquete `comandos`): `ejecutar()`, destino, tipo de acción y parámetros | status: todo | deps: R-008
-- [ ] R-010 | Definir `ObservadorComandos` y un bus simple de comandos (`BusComandos`) para que el grabador reciba cada comando enviado con su momento | status: todo | deps: R-009
+- [x] R-008 | Definir la interfaz `Sintetizador` (paquete `sintetizadores`): `id()`, ejecutar una acción con `TipoAccion` y parámetros, y liberar todas las notas | status: done | deps: R-007
+- [x] R-009 | Definir la interfaz `Comando` (paquete `comandos`): `ejecutar()`, destino, tipo de acción y parámetros | status: done | deps: R-008
+- [x] R-010 | Definir `ObservadorComandos` y un bus simple de comandos (`BusComandos`) para que el grabador reciba cada comando enviado con su momento | status: done | deps: R-009
 - [ ] R-011 | Definir la interfaz `FachadaControlador` (conectar/desconectar, listar y asignar dispositivos, asignar sintetizador a instrumento, opciones configurables, iniciar/detener grabación, listar/buscar/reproducir sesiones) y `ObservadorEstado` (estado y errores) | status: todo | deps: R-009
 - [ ] R-012 | Acordar convenciones: nombres de clases, estilo de pruebas, ramas de git por parte y regla de no editar paquetes de la otra parte | status: todo | deps: R-001
