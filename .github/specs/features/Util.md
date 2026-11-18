@@ -97,8 +97,6 @@ Los errores de archivos deben incluir su ubicación cuando esté disponible.
 - El tamaño válido se define como constante en `util.Constantes`.
 - La serialización produce un registro de longitud fija.
 
-La implementación específica de los registros de grabación se define en T-007.
-
 # Criterios de aceptación
 
 - `util.Constantes` centraliza constantes compartidas y usa un constructor

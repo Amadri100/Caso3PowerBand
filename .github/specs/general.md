@@ -7,7 +7,7 @@ status: draft
 version: 0.2.0
 owner: Equipo PowerBand
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-18
 depends_on: []
 ---
 
@@ -67,6 +67,15 @@ y remotos.
 ### archivos
 
 - Gestión de archivos de grabación y aplicación de los algoritmos de procesamiento.
+- Las sesiones contienen comandos y tiempos relativos, no muestras de audio.
+- `recordings.music` contiene encabezados y comandos en registros binarios de
+  tamaño fijo.
+- `recordings.list` conserva las grabaciones en orden cronológico.
+- `recordings.index` conserva nombres y posiciones de bytes para búsqueda por
+  nombre.
+- La búsqueda por nombre usa búsqueda binaria sobre disco.
+- El índice se organiza con Balanced Merge Sort sobre archivos, sin cargar todos
+  sus registros en memoria.
 
 ### input
 
@@ -112,6 +121,8 @@ y remotos.
 
 - Punto de acceso global mediante una única instancia.
 - Coordina los servicios necesarios sin contener lógica exclusiva de UI.
+- Compone entradas, instrumentos, sintetizadores, archivos y registro.
+- Mantiene el estado inicial cuando falla la conexión o se detiene el servidor.
 
 ### ui
 
@@ -120,6 +131,8 @@ y remotos.
 - Permite cambiar el dispositivo compatible asignado a un instrumento.
 - Permite cambiar el sintetizador asignado a un instrumento.
 - Permite buscar, localizar y guardar grabaciones.
+- Permite iniciar y detener grabaciones y reproducir sesiones.
+- Muestra estados y errores recibidos de los servicios.
 - La UI no implementa reglas de negocio ni llamadas directas a las librerías de entrada.
 
 ### main
