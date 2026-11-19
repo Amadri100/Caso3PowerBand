@@ -53,7 +53,10 @@ binarias o textuales y las clases Java responsables de leerlos y escribirlos.
 # `recordings.music`
 
 - Contiene las grabaciones como encabezados seguidos de sus comandos.
-- La carpeta base es `powerband/recordings`.
+- La carpeta base es `powerband/recordings`, separada de `powerband/logs`.
+- `ArchivosGrabacion.inicializar()` crea la carpeta y los archivos musicales
+  faltantes sin truncar los que ya existen; registra en el log la ubicación de
+  cada archivo recién creado.
 - No contiene audio grabado ni muestras.
 - Los encabezados y comandos usan registros de tamaño fijo.
 - Un archivo inválido o con un tamaño no múltiplo de su registro se reporta
@@ -122,8 +125,14 @@ Valores válidos de acción:
 - El nombre ocupa 200 bytes UTF-8 y la fecha ocupa 8 bytes epoch millis.
 - Tamaño fijo acordado de `EntradaListaGrabacion`: **208 bytes**.
 - Las fechas se comparan por su epoch millis.
-- Si dos fechas son iguales, el nombre se usa como desempate estable.
-- La carga consulta este archivo sin cargar todos sus registros en arreglos.
+- Si dos fechas son iguales, el nombre se compara con
+  `archivos.ComparadorNombres`; nombres iguales según el comparador son
+  duplicados.
+- `archivos.EntradaListaGrabacion` representa cada registro, y la gestión de
+  inserción/listado está en `archivos.ListaGrabaciones` según
+  `../parteB/T-207-T-208.md`.
+- El archivo se lee secuencialmente por registros; no se carga su contenido
+  binario completo en un único arreglo.
 
 # `recordings.index`
 
@@ -134,6 +143,9 @@ Valores válidos de acción:
   independiente del locale y sin normalización Unicode.
 - Los nombres que el comparador considera iguales también cuentan como
   duplicados; la forma original del nombre se conserva en el registro.
+- `archivos.EntradaIndice` se busca directamente en disco mediante búsqueda
+  binaria con `archivos.BuscadorIndice`, según el contrato de
+  `../parteB/T-207-T-208.md`.
 
 ## `EntradaIndice`
 
@@ -156,8 +168,9 @@ Tamaño fijo acordado: **216 bytes**.
 
 # Operaciones sobre archivos
 
-- Si un archivo requerido no existe, se crea un archivo vacío y se registra su
-  ubicación.
+- Si un archivo requerido no existe, `ArchivosGrabacion` lo crea vacío bajo
+  `Constantes.RUTA_GRABACIONES` y registra su ubicación. Los nombres de los
+  archivos se declaran en `util.Constantes`.
 - Antes de leer, se valida que el tamaño del archivo sea múltiplo del registro
   correspondiente.
 - Si existe residuo, el archivo se informa como incompleto o inválido.

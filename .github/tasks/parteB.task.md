@@ -12,9 +12,9 @@ updated: 2026-11-18
 - [x] T-203 | Clase `EntradaIndice`: nombre y posiciones inicial/final en bytes | status: done | deps: R-004
 - [x] T-204 | Comparador único de nombres, usado por el ordenamiento y por la búsqueda | status: done | deps: T-203
 - [x] T-205 | Lectura y escritura de registros de tamaño fijo por posición de byte; cálculo de cantidad de registros y detección de residuo (archivo inválido) | status: done | deps: T-201, T-202, T-203
-- [ ] T-206 | Creación de archivos de datos faltantes (`recordings.music`, `.list`, `.index`) con registro de su ubicación | status: todo | deps: R-006
-- [ ] T-207 | Gestión de `recordings.list`: agregar en orden cronológico y listar | status: todo | deps: T-205
-- [ ] T-208 | Búsqueda binaria en disco sobre `recordings.index` | status: todo | deps: T-204, T-205
+- [x] T-206 | Creación de archivos de datos faltantes (`recordings.music`, `.list`, `.index`) con registro de su ubicación | status: done | deps: R-006
+- [x] T-207 | Gestión de `recordings.list`: agregar en orden cronológico y listar | status: done | deps: T-204, T-205
+- [x] T-208 | Búsqueda binaria en disco sobre `recordings.index` | status: done | deps: T-204, T-205
 - [ ] T-209 | Balanced Merge Sort sobre archivos para el índice, sin cargar todos los registros en memoria | status: todo | deps: T-204, T-205
 - [ ] T-210 | Reemplazo del índice solo después de ordenar y validar el resultado; conservar el índice anterior ante fallos | status: todo | deps: T-209
 

@@ -12,6 +12,12 @@ public final class Constantes {
 
     public static final String RUTA_LOGS = "powerband/logs";
     public static final String RUTA_GRABACIONES = "powerband/recordings";
+    public static final String NOMBRE_ARCHIVO_GRABACIONES_MUSICA =
+            "recordings.music";
+    public static final String NOMBRE_ARCHIVO_GRABACIONES_LISTA =
+            "recordings.list";
+    public static final String NOMBRE_ARCHIVO_GRABACIONES_INDICE =
+            "recordings.index";
 
     public static final String CATEGORIA_COMANDO = "comando";
     public static final String CATEGORIA_INFO = "info";
