@@ -53,10 +53,8 @@ public final class EncabezadoGrabacion {
                 Constantes.TAMANO_ENCABEZADO_GRABACION)
                 .order(ByteOrder.BIG_ENDIAN);
         buffer.put(nombreBytes);
-        while (buffer.position()
-                < Constantes.LONGITUD_MAXIMA_NOMBRE) {
-            buffer.put((byte) 0);
-        }
+        // una lista de bytes en java se inicializa en 0
+        buffer.put(new byte[Constantes.LONGITUD_MAXIMA_NOMBRE - buffer.position()]); 
         buffer.putLong(posicionInicial);
         buffer.putLong(posicionFinal);
         buffer.putLong(fechaEpochMillis);
