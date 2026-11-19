@@ -165,6 +165,9 @@ Tamaño fijo acordado: **216 bytes**.
 - La búsqueda binaria opera directamente sobre registros del archivo.
 - El criterio de comparación usado por búsqueda binaria debe ser el mismo que usa
   Balanced Merge Sort.
+- `archivos.OrdenadorIndice` realiza el ordenamiento externo definido en
+  `../parteB/T-209.md`: opera sobre archivos temporales y mantiene la memoria
+  acotada; T-209 no reemplaza el índice original.
 
 # Operaciones sobre archivos
 
