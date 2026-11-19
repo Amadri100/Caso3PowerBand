@@ -129,8 +129,11 @@ Valores válidos de acción:
 
 - Conserva el nombre y las posiciones inicial/final de cada grabación.
 - Mantiene las entradas ordenadas por nombre para permitir búsqueda binaria.
-- El orden de nombres usa comparación Unicode consistente, sin importar mayúsculas
-  o minúsculas, salvo que se acuerde otra regla en `Util`.
+- El ordenamiento y la búsqueda usan el criterio único definido en
+  `../parteB/T-204-T-205.md`: `String.CASE_INSENSITIVE_ORDER`, independiente del
+  locale y sin normalización Unicode.
+- Los nombres que el comparador considera iguales también cuentan como
+  duplicados; la forma original del nombre se conserva en el registro.
 
 ## `EntradaIndice`
 
@@ -158,6 +161,9 @@ Tamaño fijo acordado: **216 bytes**.
 - Antes de leer, se valida que el tamaño del archivo sea múltiplo del registro
   correspondiente.
 - Si existe residuo, el archivo se informa como incompleto o inválido.
+- Las lecturas y escrituras usan offsets absolutos en bytes alineados con el
+  tamaño del registro; la cantidad se calcula solo después de comprobar que no
+  haya residuo. El contrato completo está en `../parteB/T-204-T-205.md`.
 - Un registro con nombre vacío, código de sintetizador desconocido o tipo de
   acción desconocido se rechaza.
 - Al guardar una grabación se verifica primero que el nombre no exista.
