@@ -7,8 +7,8 @@ updated: 2026-11-18
 
 ## Registros y archivos
 
-- [ ] T-201 | Clase `EncabezadoGrabacion`: `toString()`, validación de tamaño, serializar y leer | status: todo | deps: R-004
-- [ ] T-202 | Clase `ComandoGrabado`: tiempo relativo, id de sintetizador, tipo de acción y parámetros | status: todo | deps: R-004, R-009
+- [x] T-201 | Clase `EncabezadoGrabacion`: `toString()`, validación de tamaño, serializar y leer | status: done | deps: R-004
+- [x] T-202 | Clase `ComandoGrabado`: tiempo relativo, id de sintetizador, tipo de acción y parámetros | status: done | deps: R-004, R-009
 - [ ] T-203 | Clase `EntradaIndice`: nombre y posiciones inicial/final en bytes | status: todo | deps: R-004
 - [ ] T-204 | Comparador único de nombres, usado por el ordenamiento y por la búsqueda | status: todo | deps: T-203
 - [ ] T-205 | Lectura y escritura de registros de tamaño fijo por posición de byte; cálculo de cantidad de registros y detección de residuo (archivo inválido) | status: todo | deps: T-201, T-202, T-203

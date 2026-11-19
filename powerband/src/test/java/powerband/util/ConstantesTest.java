@@ -18,9 +18,10 @@ class ConstantesTest {
         assertEquals("comando", Constantes.CATEGORIA_COMANDO);
         assertEquals("info", Constantes.CATEGORIA_INFO);
         assertEquals("error", Constantes.CATEGORIA_ERROR);
-        assertTrue(Constantes.TAMANO_ENCABEZADO_GRABACION > 0);
-        assertTrue(Constantes.TAMANO_COMANDO_GRABADO > 0);
-        assertTrue(Constantes.TAMANO_ENTRADA_INDICE > 0);
+        assertEquals(200, Constantes.LONGITUD_MAXIMA_NOMBRE);
+        assertEquals(224, Constantes.TAMANO_ENCABEZADO_GRABACION);
+        assertEquals(75, Constantes.TAMANO_COMANDO_GRABADO);
+        assertEquals(216, Constantes.TAMANO_ENTRADA_INDICE);
     }
 
     @Test
