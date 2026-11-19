@@ -1,7 +1,6 @@
 package powerband.archivos;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -54,7 +53,7 @@ public final class ComandoGrabado {
     public byte[] serializar() {
         ByteBuffer buffer = ByteBuffer.allocate(
                 Constantes.TAMANO_COMANDO_GRABADO)
-                .order(ByteOrder.BIG_ENDIAN);
+                .order(Constantes.ORDEN_BYTES_PROGRAMA);
         buffer.putLong(tiempoRelativoMillis);
         buffer.put((byte) idSintetizador.codigo());
         buffer.put((byte) tipoAccion.codigo());
@@ -77,7 +76,7 @@ public final class ComandoGrabado {
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(datos)
-                .order(ByteOrder.BIG_ENDIAN);
+                .order(Constantes.ORDEN_BYTES_PROGRAMA);
         long tiempoRelativoMillis = buffer.getLong();
         int codigoSintetizador = Byte.toUnsignedInt(buffer.get());
         int codigoAccion = Byte.toUnsignedInt(buffer.get());

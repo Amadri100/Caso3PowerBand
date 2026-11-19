@@ -2,6 +2,7 @@ package powerband.util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.nio.ByteOrder;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,7 @@ class ConstantesTest {
         assertEquals("comando", Constantes.CATEGORIA_COMANDO);
         assertEquals("info", Constantes.CATEGORIA_INFO);
         assertEquals("error", Constantes.CATEGORIA_ERROR);
+        assertEquals(ByteOrder.BIG_ENDIAN, Constantes.ORDEN_BYTES_PROGRAMA);
         assertEquals(200, Constantes.LONGITUD_MAXIMA_NOMBRE);
         assertEquals(224, Constantes.TAMANO_ENCABEZADO_GRABACION);
         assertEquals(75, Constantes.TAMANO_COMANDO_GRABADO);

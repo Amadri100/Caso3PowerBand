@@ -1,6 +1,10 @@
 package powerband.util;
 
+import java.nio.ByteOrder;
+
 public final class Constantes {
+
+    public static final ByteOrder ORDEN_BYTES_PROGRAMA = ByteOrder.BIG_ENDIAN;
 
     public static final String HOST_DEFECTO = "127.0.0.1";
     public static final int PUERTO_DEFECTO = 57117;

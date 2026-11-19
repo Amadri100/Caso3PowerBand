@@ -22,7 +22,8 @@ binarias o textuales y las clases Java responsables de leerlos y escribirlos.
 - Las rutas compartidas se declaran en `util.Constantes`.
 - Los registros se usan como secuencias de bytes y no como texto separado por
   líneas.
-- Los enteros y posiciones se almacenan en formato binario big-endian.
+- Los enteros y posiciones se almacenan con el orden definido por
+  `util.Constantes.ORDEN_BYTES_PROGRAMA` (big-endian).
 - Los campos de texto se codifican como UTF-8.
 - Los nombres tienen como máximo 200 bytes. No se recorta una cadena si su
   representación UTF-8 excede el límite; el valor se rechaza.
@@ -30,6 +31,8 @@ binarias o textuales y las clases Java responsables de leerlos y escribirlos.
   consideran relleno y no forman parte del nombre.
 - Las fechas se representan como epoch millis en un `long`.
 - Los tamaños fijos se validan antes de escribir o aceptar la deserialización.
+- La validación y codificación de nombres UTF-8 compartida por los registros se
+  implementa en `archivos.ValidacionesGenerales`.
 - Toda clase de registro implementa `toString()` y valida el tamaño fijo antes
   de serializar.
 
