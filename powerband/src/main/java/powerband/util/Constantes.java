@@ -38,6 +38,8 @@ public final class Constantes {
                     + MAXIMO_PARAMETROS_COMANDO * TAMANO_PARAMETRO_COMANDO;
     public static final int TAMANO_ENTRADA_INDICE =
             LONGITUD_MAXIMA_NOMBRE + TAMANO_POSICION_BYTES + TAMANO_POSICION_BYTES;
+    public static final int TAMANO_ENTRADA_LISTA_GRABACION =
+            LONGITUD_MAXIMA_NOMBRE + TAMANO_FECHA_EPOCH_MILLIS;
 
     private Constantes() {
     }

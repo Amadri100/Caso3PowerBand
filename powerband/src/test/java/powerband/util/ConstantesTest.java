@@ -24,6 +24,7 @@ class ConstantesTest {
         assertEquals(224, Constantes.TAMANO_ENCABEZADO_GRABACION);
         assertEquals(75, Constantes.TAMANO_COMANDO_GRABADO);
         assertEquals(216, Constantes.TAMANO_ENTRADA_INDICE);
+        assertEquals(208, Constantes.TAMANO_ENTRADA_LISTA_GRABACION);
     }
 
     @Test
