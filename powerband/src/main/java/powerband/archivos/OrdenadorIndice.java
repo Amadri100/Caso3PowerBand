@@ -20,36 +20,43 @@ public final class OrdenadorIndice {
         this.rutaIndice = Objects.requireNonNull(rutaIndice, "rutaIndice")
                 .toAbsolutePath().normalize();
     }
-
+    //Algoritmo que ordena el archivo de indice como tal
     public Path ordenar() throws IOException {
+        //Caminoss a los archivos temporales
         Set<Path> temporales = new LinkedHashSet<>();
         try {
+            //Abre el archvio de indice
             long cantidad;
             try (ArchivoRegistros<EntradaIndice> archivoIndice =
                     crearArchivoRegistros(rutaIndice)) {
                 cantidad = archivoIndice.cantidadRegistros();
             }
+            //Primero separa todo en runs de 1 
             Path origenOrdenado = rutaIndice;
             long longitudRun = 1;
-            //si hay un solo registro ya esta ordenado
+            //si hay un solo registro o menos ya esta ordenado
             if (cantidad <= 1) {
                 Path salida = crearTemporal(temporales);
                 copiar(origenOrdenado, salida, cantidad);
                 validarResultado(salida, cantidad);
                 return entregarResultado(salida, temporales);
             }
-
+            //Termina si la longitud de la run alcanza la cantidad de registros
             while (longitudRun < cantidad) {
                 Path entradaIzquierda = crearTemporal(temporales);
                 Path entradaDerecha = crearTemporal(temporales);
                 Path salida = crearTemporal(temporales);
-
+                //Distribuye las runs en una logitud especifica, por el orden 
+                //del procedimiento siempre estan ordenados.
                 distribuirRuns(origenOrdenado, entradaIzquierda,
                         entradaDerecha, cantidad, longitudRun);
+                //Mezcla la distribución de runs en una forma de que quede ordenado
                 mezclarRuns(entradaIzquierda, entradaDerecha, salida,
                         longitudRun);
+                //Valida que este ordenado
                 validarCantidad(salida, cantidad);
-
+                
+                //Limpia los archivos
                 eliminarTemporal(entradaIzquierda, temporales);
                 eliminarTemporal(entradaDerecha, temporales);
                 if (!origenOrdenado.equals(rutaIndice)) {
@@ -57,10 +64,12 @@ public final class OrdenadorIndice {
                 }
 
                 origenOrdenado = salida;
+                //Evita que se la longitud de la run supero a cantidad. 
+                //En algunos casos como tener 7 registros, la formula se pasa.
                 longitudRun = longitudRun > cantidad / 2
                         ? cantidad : longitudRun * 2;
             }
-
+            //Validación final
             validarResultado(origenOrdenado, cantidad);
             return entregarResultado(origenOrdenado, temporales);
         } catch (IOException excepcion) {
@@ -120,14 +129,8 @@ public final class OrdenadorIndice {
         }
     }
 
-        /**
-     * Mezcla pares de runs ya ordenados. El k-ésimo run del archivo izquierdo
-     * se mezcla con el k-ésimo run del derecho y el resultado se escribe en
-     * orden en el archivo de salida. Cada run mide como máximo longitudRun
-     * registros (el último de cada archivo puede ser más corto).
-     * Lanza IOException si encuentra nombres duplicados según
-     * ComparadorNombres (que no distingue mayúsculas).
-     */
+    //Mezcla las runs ordenadas.
+    //Error si hay nombres duplicados
     private void mezclarRuns(Path rutaIzquierda, Path rutaDerecha,
             Path rutaSalida, long longitudRun) throws IOException {
         ArchivoRegistros<EntradaIndice> izquierda =
