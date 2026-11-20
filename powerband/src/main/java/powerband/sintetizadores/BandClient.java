@@ -6,20 +6,22 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
+import powerband.util.Configuraciones;
+import powerband.util.Constantes;
 
 /**
- * Minimal OSC client that plays the synths defined in myband.sc
+ * OSC client that plays the synths defined in myband.sc
  * (classicPiano, stringBass, organ70s) on a running scsynth.
  *
- * It talks directly to scsynth (default UDP 57110) using /s_new and /n_set,
- * so no OSC library is needed. Run ~myband.load in SuperCollider first.
+ * It talks directly to scsynth using /s_new and /n_set, so no OSC library is
+ * needed. The default destination comes from Configuraciones.
  */
 public class BandClient implements AutoCloseable {
-
-    public static final String DEFAULT_HOST = "127.0.0.1";
-    public static final int DEFAULT_PORT = 57110;
 
     private static final int ADD_TO_HEAD = 0;
     private static final int DEFAULT_GROUP = 1;
@@ -33,12 +35,24 @@ public class BandClient implements AutoCloseable {
     private final Map<Integer, Integer> activeOrgan = new HashMap<>(); // midi note -> node id
 
     public BandClient() throws IOException {
-        this(DEFAULT_HOST, DEFAULT_PORT);
+        this(Configuraciones.getInstance());
+    }
+
+    public BandClient(Configuraciones configuraciones) throws IOException {
+        this(Objects.requireNonNull(configuraciones, "configuraciones").getHost(),
+                configuraciones.getPuerto());
     }
 
     public BandClient(String host, int port) throws IOException {
-        this.socket = new DatagramSocket();
+        Objects.requireNonNull(host, "host");
+        if (host.isBlank()) {
+            throw new IllegalArgumentException("El host no puede estar vacio");
+        }
+        if (port < 1 || port > 65535) {
+            throw new IllegalArgumentException("El puerto debe estar entre 1 y 65535");
+        }
         this.address = InetAddress.getByName(host);
+        this.socket = new DatagramSocket();
         this.port = port;
     }
 
@@ -66,12 +80,24 @@ public class BandClient implements AutoCloseable {
 
     /** 70's organ with default partials (1, 2, 3) and amplitudes. */
     public void noteOn(int note) throws IOException {
-        noteOn(note, new float[] { 1f, 2f, 3f }, new float[] { 1f, 0.5f, 0.25f });
+        noteOn(note,
+                new float[] {
+                        (float) Constantes.RAZON_ORGANO_1,
+                        (float) Constantes.RAZON_ORGANO_2,
+                        (float) Constantes.RAZON_ORGANO_3
+                },
+                new float[] {
+                        (float) Constantes.AMPLITUD_ORGANO_1,
+                        (float) Constantes.AMPLITUD_ORGANO_2,
+                        (float) Constantes.AMPLITUD_ORGANO_3
+                });
     }
 
     /** 70's organ with 3 partial ratios and 3 partial amplitudes. Sounds until noteOff. */
-    public void noteOn(int note, float[] ratios, float[] amps) throws IOException {
-        if (ratios.length != 3 || amps.length != 3) {
+    public synchronized void noteOn(int note, float[] ratios, float[] amps) throws IOException {
+        if (ratios == null || amps == null
+                || ratios.length != Constantes.CANTIDAD_PARCIALES_ORGANO
+                || amps.length != Constantes.CANTIDAD_PARCIALES_ORGANO) {
             throw new IllegalArgumentException("organ needs exactly 3 ratios and 3 amps");
         }
         noteOff(note); // retrigger safely
@@ -82,27 +108,42 @@ public class BandClient implements AutoCloseable {
         activeOrgan.put(note, id);
     }
 
-    public void noteOff(int note) throws IOException {
-        Integer id = activeOrgan.remove(note);
+    public synchronized void noteOff(int note) throws IOException {
+        Integer id = activeOrgan.get(note);
         if (id != null) {
             send("/n_set", id, "gate", 0);
+            activeOrgan.remove(note, id);
         }
     }
 
-    public void allNotesOff() throws IOException {
-        for (Integer note : activeOrgan.keySet().toArray(new Integer[0])) {
-            noteOff(note);
+    public synchronized void allNotesOff() throws IOException {
+        IOException falloEnvio = null;
+        for (Integer note : new ArrayList<>(activeOrgan.keySet())) {
+            try {
+                noteOff(note);
+            } catch (IOException fallo) {
+                if (falloEnvio == null) {
+                    falloEnvio = fallo;
+                } else {
+                    falloEnvio.addSuppressed(fallo);
+                }
+            }
+        }
+        if (falloEnvio != null) {
+            throw falloEnvio;
         }
     }
 
     // ------------------------------------------------------------- helpers
 
     private static float midiToFreq(int note) {
-        return (float) (440.0 * Math.pow(2.0, (note - 69) / 12.0));
+        return (float) (Constantes.FRECUENCIA_AFINACION_HZ
+                * Math.pow(2.0,
+                        (note - 69) / (double) Constantes.SEMITONOS_POR_OCTAVA));
     }
 
     /** Sends /s_new defName nodeId addAction target [name value ...]; returns the node id. */
-    private int sNew(String defName, Object... controls) throws IOException {
+    private synchronized int sNew(String defName, Object... controls) throws IOException {
         int id = nextNodeId++;
         Object[] args = new Object[4 + controls.length];
         args[0] = defName;
@@ -154,12 +195,20 @@ public class BandClient implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() throws IOException {
+        if (socket.isClosed()) {
+            return;
+        }
+        IOException falloEnvio = null;
         try {
             allNotesOff();
-        } catch (IOException ignored) {
+        } catch (IOException fallo) {
+            falloEnvio = fallo;
         }
         socket.close();
+        if (falloEnvio != null) {
+            throw falloEnvio;
+        }
     }
 
     // ---------------------------------------------------------------- test
@@ -169,8 +218,11 @@ public class BandClient implements AutoCloseable {
      * then run this main. Optional args: host port.
      */
     public static void main(String[] args) throws Exception {
-        String host = args.length > 0 ? args[0] : DEFAULT_HOST;
-        int port = args.length > 1 ? Integer.parseInt(args[1]) : DEFAULT_PORT;
+        Configuraciones configuraciones = Configuraciones.getInstance();
+        String host = args.length > 0 ? args[0] : configuraciones.getHost();
+        int port = args.length > 1
+                ? Integer.parseInt(args[1])
+                : configuraciones.getPuerto();
 
         try (BandClient band = new BandClient(host, port)) {
             System.out.println("Connecting to scsynth at " + host + ":" + port);
