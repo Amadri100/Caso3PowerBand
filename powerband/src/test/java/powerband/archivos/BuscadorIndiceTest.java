@@ -103,13 +103,15 @@ class BuscadorIndiceTest {
         LoggerPowerBand.cambiarPath(rutaLogs);
         ArchivosGrabacion rutas = ArchivosGrabacion.inicializar(
                 carpetaTemporal.resolve("recordings"));
-        ArchivoRegistros<EntradaIndice> archivo = new ArchivoRegistros<>(
+        try (ArchivoRegistros<EntradaIndice> archivo =
+                new ArchivoRegistros<>(
                 rutas.archivoIndice(), Constantes.TAMANO_ENTRADA_INDICE,
-                EntradaIndice::desdeBytes, EntradaIndice::serializar);
-        long posicion = 0;
-        for (EntradaIndice entrada : entradas) {
-            archivo.escribir(posicion, entrada);
-            posicion += Constantes.TAMANO_ENTRADA_INDICE;
+                EntradaIndice::desdeBytes, EntradaIndice::serializar)) {
+            long posicion = 0;
+            for (EntradaIndice entrada : entradas) {
+                archivo.escribir(posicion, entrada);
+                posicion += Constantes.TAMANO_ENTRADA_INDICE;
+            }
         }
         return rutas.archivoIndice();
     }

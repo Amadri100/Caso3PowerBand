@@ -10,24 +10,28 @@ import java.util.Set;
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
 
+
+//runs = una parte ordenada
 public final class OrdenadorIndice {
 
     private final Path rutaIndice;
-    private final ArchivoRegistros<EntradaIndice> archivoIndice;
 
     public OrdenadorIndice(Path rutaIndice) {
         this.rutaIndice = Objects.requireNonNull(rutaIndice, "rutaIndice")
                 .toAbsolutePath().normalize();
-        this.archivoIndice = crearArchivoRegistros(this.rutaIndice);
     }
 
     public Path ordenar() throws IOException {
         Set<Path> temporales = new LinkedHashSet<>();
         try {
-            long cantidad = archivoIndice.cantidadRegistros();
+            long cantidad;
+            try (ArchivoRegistros<EntradaIndice> archivoIndice =
+                    crearArchivoRegistros(rutaIndice)) {
+                cantidad = archivoIndice.cantidadRegistros();
+            }
             Path origenOrdenado = rutaIndice;
             long longitudRun = 1;
-
+            //si hay un solo registro ya esta ordenado
             if (cantidad <= 1) {
                 Path salida = crearTemporal(temporales);
                 copiar(origenOrdenado, salida, cantidad);
@@ -73,44 +77,57 @@ public final class OrdenadorIndice {
             throw excepcion;
         }
     }
-
+    //Distribuye las runs en partes de izquierda y derecha
     private void distribuirRuns(Path origen, Path rutaIzquierda,
             Path rutaDerecha, long cantidad, long longitudRun)
             throws IOException {
+        //Archivos
         ArchivoRegistros<EntradaIndice> archivoOrigen =
                 crearArchivoRegistros(origen);
         ArchivoRegistros<EntradaIndice> izquierda =
                 crearArchivoRegistros(rutaIzquierda);
         ArchivoRegistros<EntradaIndice> derecha =
                 crearArchivoRegistros(rutaDerecha);
-
-        long indiceOrigen = 0;
-        long cantidadIzquierda = 0;
-        long cantidadDerecha = 0;
-        long numeroRun = 0;
-        while (indiceOrigen < cantidad) {
-            long longitudActual = Math.min(
-                    longitudRun, cantidad - indiceOrigen);
-            boolean escribirIzquierda = numeroRun % 2 == 0;
-            for (long indiceRun = 0;
-                    indiceRun < longitudActual; indiceRun++) {
-                EntradaIndice entrada =
-                        archivoOrigen.leer(posicionBytes(indiceOrigen));
-                if (escribirIzquierda) {
-                    izquierda.escribir(
-                            posicionBytes(cantidadIzquierda), entrada);
-                    cantidadIzquierda++;
-                } else {
-                    derecha.escribir(
-                            posicionBytes(cantidadDerecha), entrada);
-                    cantidadDerecha++;
+        //archivoOrigen, etc... lo cierra autoamticamente
+        try (archivoOrigen; izquierda; derecha) {
+            long indiceOrigen = 0;
+            long cantidadIzquierda = 0;
+            long cantidadDerecha = 0;
+            long numeroRun = 0;
+            while (indiceOrigen < cantidad) {
+                //Decide entre tomar el tamaño definido de la run o el tamaño real si fuera el caso
+                //Toma el minimo
+                long longitudActual = Math.min(
+                        longitudRun, cantidad - indiceOrigen);
+                boolean escribirIzquierda = numeroRun % 2 == 0;
+                for (long indiceRun = 0;
+                        indiceRun < longitudActual; indiceRun++) {
+                    EntradaIndice entrada =
+                            archivoOrigen.leer(posicionBytes(indiceOrigen));
+                    if (escribirIzquierda) {
+                        izquierda.escribir(
+                                posicionBytes(cantidadIzquierda), entrada);
+                        cantidadIzquierda++;
+                    } else {
+                        derecha.escribir(
+                                posicionBytes(cantidadDerecha), entrada);
+                        cantidadDerecha++;
+                    }
+                    indiceOrigen++;
                 }
-                indiceOrigen++;
+                numeroRun++;
             }
-            numeroRun++;
         }
     }
 
+        /**
+     * Mezcla pares de runs ya ordenados. El k-ésimo run del archivo izquierdo
+     * se mezcla con el k-ésimo run del derecho y el resultado se escribe en
+     * orden en el archivo de salida. Cada run mide como máximo longitudRun
+     * registros (el último de cada archivo puede ser más corto).
+     * Lanza IOException si encuentra nombres duplicados según
+     * ComparadorNombres (que no distingue mayúsculas).
+     */
     private void mezclarRuns(Path rutaIzquierda, Path rutaDerecha,
             Path rutaSalida, long longitudRun) throws IOException {
         ArchivoRegistros<EntradaIndice> izquierda =
@@ -119,89 +136,126 @@ public final class OrdenadorIndice {
                 crearArchivoRegistros(rutaDerecha);
         ArchivoRegistros<EntradaIndice> salida =
                 crearArchivoRegistros(rutaSalida);
-        long cantidadIzquierda = izquierda.cantidadRegistros();
-        long cantidadDerecha = derecha.cantidadRegistros();
-        long indiceIzquierda = 0;
-        long indiceDerecha = 0;
-        long indiceSalida = 0;
+        // Cierra los tres archivos automáticamente al terminar
+        try (izquierda; derecha; salida) {
+            long cantidadIzquierda = izquierda.cantidadRegistros();
+            long cantidadDerecha = derecha.cantidadRegistros();
+            // Posición actual de lectura en cada entrada y de escritura en la salida
+            long indiceIzquierda = 0;
+            long indiceDerecha = 0;
+            long indiceSalida = 0;
 
-        while (indiceIzquierda < cantidadIzquierda
-                || indiceDerecha < cantidadDerecha) {
-            long finRunIzquierdo = Math.min(
-                    indiceIzquierda + longitudRun, cantidadIzquierda);
-            long finRunDerecho = Math.min(
-                    indiceDerecha + longitudRun, cantidadDerecha);
-            while (indiceIzquierda < finRunIzquierdo
-                    || indiceDerecha < finRunDerecho) {
-                EntradaIndice entradaIzquierda =
-                        indiceIzquierda < finRunIzquierdo
-                                ? izquierda.leer(
-                                        posicionBytes(indiceIzquierda))
-                                : null;
-                EntradaIndice entradaDerecha =
-                        indiceDerecha < finRunDerecho
-                                ? derecha.leer(posicionBytes(indiceDerecha))
-                                : null;
+            // Cada vuelta procesa un par de runs (uno de cada archivo)
+            while (indiceIzquierda < cantidadIzquierda
+                    || indiceDerecha < cantidadDerecha) {
+                // Fin (exclusivo) de cada run. Math.min evita pasarse del
+                // final del archivo cuando el último run es más corto
+                long finRunIzquierdo = Math.min(
+                        indiceIzquierda + longitudRun, cantidadIzquierda);
+                long finRunDerecho = Math.min(
+                        indiceDerecha + longitudRun, cantidadDerecha);
 
-                if (entradaDerecha == null
-                        || entradaIzquierda != null
-                                && ComparadorNombres.INSTANCIA.compare(
-                                        entradaIzquierda.nombre(),
-                                        entradaDerecha.nombre()) <= 0) {
-                    salida.escribir(posicionBytes(indiceSalida++),
-                            entradaIzquierda);
-                    indiceIzquierda++;
-                } else {
-                    salida.escribir(posicionBytes(indiceSalida++),
-                            entradaDerecha);
-                    indiceDerecha++;
+                //Inicia el algoritmo de mezcla
+                while (indiceIzquierda < finRunIzquierdo
+                        || indiceDerecha < finRunDerecho) {
+                    //null si no hay más, guarda lo datos
+                    EntradaIndice entradaIzquierda =
+                            indiceIzquierda < finRunIzquierdo
+                                    ? izquierda.leer(
+                                            posicionBytes(indiceIzquierda))
+                                    : null;
+                    EntradaIndice entradaDerecha =
+                            indiceDerecha < finRunDerecho
+                                    ? derecha.leer(
+                                            posicionBytes(indiceDerecha))
+                                    : null;
+
+                    //Comparación segun estado; evita crear otro for
+                    int comparacion;
+                    if (entradaIzquierda == null) {
+                        comparacion = 1;
+                    } else if (entradaDerecha == null) {
+                        comparacion = -1;
+                    } else {
+                        comparacion = ComparadorNombres.INSTANCIA.compare(
+                                entradaIzquierda.nombre(),
+                                entradaDerecha.nombre());
+                    }
+
+                    // Empate según el comparador: "Ana" y "ana" son duplicados
+                    // (aquí ambas entradas existen, no hay nulls)
+                    if (comparacion == 0) {
+                        throw new IOException(
+                                "El índice contiene nombres duplicados: "
+                                        + entradaIzquierda.nombre() + " / "
+                                        + entradaDerecha.nombre());
+                    }
+
+                    if (comparacion < 0) {
+                        // El menor está a la izquierda
+                        salida.escribir(posicionBytes(indiceSalida++),
+                                entradaIzquierda);
+                        indiceIzquierda++;
+                    } else {
+                        // El menor está a la derecha (o la izquierda se agotó)
+                        salida.escribir(posicionBytes(indiceSalida++),
+                                entradaDerecha);
+                        indiceDerecha++;
+                    }
                 }
             }
         }
     }
-
+    //Copia una cantidad de registros de Origen -> Destino
     private void copiar(Path rutaOrigen, Path rutaDestino, long cantidad)
             throws IOException {
         ArchivoRegistros<EntradaIndice> origen =
                 crearArchivoRegistros(rutaOrigen);
         ArchivoRegistros<EntradaIndice> destino =
                 crearArchivoRegistros(rutaDestino);
-        for (long indice = 0; indice < cantidad; indice++) {
-            destino.escribir(posicionBytes(indice),
-                    origen.leer(posicionBytes(indice)));
+        try (origen; destino) {
+            for (long indice = 0; indice < cantidad; indice++) {
+                destino.escribir(posicionBytes(indice),
+                        origen.leer(posicionBytes(indice)));
+            }
         }
     }
-
+    //Determina si el resultado es correcto (validarCantidad + Ordenado correctamente)
     private void validarResultado(Path rutaResultado, long cantidadEsperada)
             throws IOException {
+        validarCantidad(rutaResultado, cantidadEsperada);
         ArchivoRegistros<EntradaIndice> resultado =
                 crearArchivoRegistros(rutaResultado);
-        validarCantidad(rutaResultado, cantidadEsperada);
-        EntradaIndice anterior = null;
-        for (long indice = 0; indice < cantidadEsperada; indice++) {
-            EntradaIndice actual = resultado.leer(posicionBytes(indice));
-            if (anterior != null && ComparadorNombres.INSTANCIA.compare(
-                    anterior.nombre(), actual.nombre()) >= 0) {
-                throw new IOException(
-                        "El índice contiene nombres duplicados o no "
-                                + "quedó estrictamente ordenado");
+        
+        try (resultado) {
+            EntradaIndice anterior = null;
+            for (long indice = 0; indice < cantidadEsperada; indice++) {
+                EntradaIndice actual = resultado.leer(posicionBytes(indice));
+                if (anterior != null && ComparadorNombres.INSTANCIA.compare(
+                        anterior.nombre(), actual.nombre()) >= 0) {
+                    throw new IOException(
+                            "El índice contiene nombres duplicados o no "
+                                    + "quedó estrictamente ordenado");
+                }
+                anterior = actual;
             }
-            anterior = actual;
         }
     }
-
+    //Revisa si la cantidad de registros real coincide con la esperada
     private void validarCantidad(Path ruta, long cantidadEsperada)
             throws IOException {
-        long cantidadObtenida =
-                crearArchivoRegistros(ruta).cantidadRegistros();
-        if (cantidadObtenida != cantidadEsperada) {
-            throw new IOException(
-                    "Se esperaban " + cantidadEsperada
-                            + " registros y se obtuvieron "
-                            + cantidadObtenida);
+        try (ArchivoRegistros<EntradaIndice> archivo =
+                crearArchivoRegistros(ruta)) {
+            long cantidadObtenida = archivo.cantidadRegistros();
+            if (cantidadObtenida != cantidadEsperada) {
+                throw new IOException(
+                        "Se esperaban " + cantidadEsperada
+                                + " registros y se obtuvieron "
+                                + cantidadObtenida);
+            }
         }
     }
-
+    //Crea un archivo temporal
     private Path crearTemporal(Set<Path> temporales) throws IOException {
         Path rutaTemporal = Files.createTempFile(
                 rutaIndice.getParent(),
@@ -209,8 +263,9 @@ public final class OrdenadorIndice {
         temporales.add(rutaTemporal);
         return rutaTemporal;
     }
-
+    //Entrega el resultado si estaba en los temporales.
     private Path entregarResultado(Path resultado, Set<Path> temporales) {
+        //Si no existia el elemento se da un error
         if (!temporales.remove(resultado)) {
             throw new IllegalStateException(
                     "El resultado no pertenece a los temporales del "
@@ -218,13 +273,13 @@ public final class OrdenadorIndice {
         }
         return resultado;
     }
-
+    //Elimina el archivo temporal sin revisar
     private void eliminarTemporal(Path temporal, Set<Path> temporales)
             throws IOException {
         Files.delete(temporal);
         temporales.remove(temporal);
     }
-
+    //Elimina los achivos temporales
     private void limpiarTemporales(Set<Path> temporales, Throwable fallo) {
         for (Path temporal : Set.copyOf(temporales)) {
             try {
@@ -235,11 +290,11 @@ public final class OrdenadorIndice {
             }
         }
     }
-
+    //Convierte de del numero de indice a su posicion en bytes
     private static long posicionBytes(long indice) {
         return indice * Constantes.TAMANO_ENTRADA_INDICE;
     }
-
+    //Cra un registro del tamaño de una entrada de indice
     private static ArchivoRegistros<EntradaIndice> crearArchivoRegistros(
             Path ruta) {
         return new ArchivoRegistros<>(ruta, Constantes.TAMANO_ENTRADA_INDICE,

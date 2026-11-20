@@ -15,30 +15,31 @@ import powerband.util.Constantes;
 public final class ListaGrabaciones {
 
     private final Path ruta;
-    private final ArchivoRegistros<EntradaListaGrabacion> archivo;
 
     public ListaGrabaciones(Path ruta) {
         this.ruta = Objects.requireNonNull(ruta, "ruta")
                 .toAbsolutePath().normalize();
-        this.archivo = crearArchivoRegistros(this.ruta);
     }
 
     public void agregar(EntradaListaGrabacion nuevaEntrada)
             throws IOException {
         Objects.requireNonNull(nuevaEntrada, "nuevaEntrada");
-        long cantidad = archivo.cantidadRegistros();
-        long posicionInsercion = encontrarPosicionInsercion(
-                nuevaEntrada, cantidad);
         Path rutaTemporal = null;
 
         try {
             rutaTemporal = Files.createTempFile(
                     ruta.getParent(), ruta.getFileName() + ".", ".tmp");
-            ArchivoRegistros<EntradaListaGrabacion> temporal =
-                    crearArchivoRegistros(rutaTemporal);
-            copiarConInsercion(temporal, nuevaEntrada, cantidad,
-                    posicionInsercion);
-            validarListaOrdenada(temporal, cantidad + 1);
+            try (ArchivoRegistros<EntradaListaGrabacion> archivo =
+                        crearArchivoRegistros(ruta);
+                    ArchivoRegistros<EntradaListaGrabacion> temporal =
+                        crearArchivoRegistros(rutaTemporal)) {
+                long cantidad = archivo.cantidadRegistros();
+                long posicionInsercion = encontrarPosicionInsercion(
+                        archivo, nuevaEntrada, cantidad);
+                copiarConInsercion(archivo, temporal, nuevaEntrada, cantidad,
+                        posicionInsercion);
+                validarListaOrdenada(temporal, cantidad + 1);
+            }
             reemplazarArchivo(rutaTemporal);
             rutaTemporal = null;
         } catch (IOException excepcion) {
@@ -53,15 +54,19 @@ public final class ListaGrabaciones {
     }
 
     public List<EntradaListaGrabacion> listar() throws IOException {
-        long cantidad = archivo.cantidadRegistros();
-        List<EntradaListaGrabacion> entradas = new ArrayList<>();
-        for (long indice = 0; indice < cantidad; indice++) {
-            entradas.add(archivo.leer(posicionBytes(indice)));
+        try (ArchivoRegistros<EntradaListaGrabacion> archivo =
+                crearArchivoRegistros(ruta)) {
+            long cantidad = archivo.cantidadRegistros();
+            List<EntradaListaGrabacion> entradas = new ArrayList<>();
+            for (long indice = 0; indice < cantidad; indice++) {
+                entradas.add(archivo.leer(posicionBytes(indice)));
+            }
+            return List.copyOf(entradas);
         }
-        return List.copyOf(entradas);
     }
 
     private long encontrarPosicionInsercion(
+            ArchivoRegistros<EntradaListaGrabacion> archivo,
             EntradaListaGrabacion nuevaEntrada, long cantidad)
             throws IOException {
         long posicionInsercion = cantidad;
@@ -85,6 +90,7 @@ public final class ListaGrabaciones {
     }
 
     private void copiarConInsercion(
+            ArchivoRegistros<EntradaListaGrabacion> archivo,
             ArchivoRegistros<EntradaListaGrabacion> destino,
             EntradaListaGrabacion nuevaEntrada, long cantidad,
             long posicionInsercion) throws IOException {

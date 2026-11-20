@@ -16,6 +16,7 @@ import powerband.util.Constantes;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OrdenadorIndiceTest {
 
@@ -119,6 +120,22 @@ class OrdenadorIndiceTest {
                 Files.readAllBytes(indiceMalFormado));
     }
 
+    @Test
+    void rechazaNombresExactamenteDuplicadosDuranteLaMezcla()
+            throws IOException {
+        Path indice = crearIndice(List.of(
+                new EntradaIndice("duplicado", 0, 10),
+                new EntradaIndice("duplicado", 10, 20)));
+
+        IOException excepcion = assertThrows(IOException.class,
+                () -> new OrdenadorIndice(indice).ordenar());
+
+        assertTrue(excepcion.getMessage().contains(
+                "El índice contiene nombres duplicados: duplicado"));
+        assertEquals(List.of("recordings.index"),
+                nombresEnCarpeta(indice.getParent()));
+    }
+
     private Path crearIndice(List<EntradaIndice> entradas)
             throws IOException {
         Path directorio = Files.createTempDirectory(
@@ -127,28 +144,31 @@ class OrdenadorIndiceTest {
         LoggerPowerBand.cambiarPath(rutaLogs);
         Path rutaIndice = directorio.resolve("recordings.index");
         Files.createFile(rutaIndice);
-        ArchivoRegistros<EntradaIndice> archivo = new ArchivoRegistros<>(
+        try (ArchivoRegistros<EntradaIndice> archivo =
+                new ArchivoRegistros<>(
                 rutaIndice, Constantes.TAMANO_ENTRADA_INDICE,
-                EntradaIndice::desdeBytes, EntradaIndice::serializar);
-        long posicion = 0;
-        for (EntradaIndice entrada : entradas) {
-            archivo.escribir(posicion, entrada);
-            posicion += Constantes.TAMANO_ENTRADA_INDICE;
+                EntradaIndice::desdeBytes, EntradaIndice::serializar)) {
+            long posicion = 0;
+            for (EntradaIndice entrada : entradas) {
+                archivo.escribir(posicion, entrada);
+                posicion += Constantes.TAMANO_ENTRADA_INDICE;
+            }
         }
         return rutaIndice;
     }
 
     private List<String> leerNombres(Path rutaIndice) throws IOException {
-        ArchivoRegistros<EntradaIndice> archivo = new ArchivoRegistros<>(
+        try (ArchivoRegistros<EntradaIndice> archivo = new ArchivoRegistros<>(
                 rutaIndice, Constantes.TAMANO_ENTRADA_INDICE,
-                EntradaIndice::desdeBytes, EntradaIndice::serializar);
-        long cantidad = archivo.cantidadRegistros();
-        List<String> nombres = new ArrayList<>();
-        for (long indice = 0; indice < cantidad; indice++) {
-            nombres.add(archivo.leer(
-                    indice * Constantes.TAMANO_ENTRADA_INDICE).nombre());
+                EntradaIndice::desdeBytes, EntradaIndice::serializar)) {
+            long cantidad = archivo.cantidadRegistros();
+            List<String> nombres = new ArrayList<>();
+            for (long indice = 0; indice < cantidad; indice++) {
+                nombres.add(archivo.leer(
+                        indice * Constantes.TAMANO_ENTRADA_INDICE).nombre());
+            }
+            return nombres;
         }
-        return nombres;
     }
 
     private List<String> nombresEnCarpeta(Path carpeta)

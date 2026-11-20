@@ -12,12 +12,15 @@ import java.util.function.Function;
 import powerband.logging.LoggerPowerBand;
 
 //Permite facilitar las operaciones con archivos y hacerlo de forma flexible
-public final class ArchivoRegistros<T> {
+public final class ArchivoRegistros<T> implements AutoCloseable {
 
     private final Path ruta;
     private final int tamanoRegistro;
     private final Function<byte[], T> decodificador;
     private final Function<T, byte[]> serializador;
+    private FileChannel canalLectura;
+    private FileChannel canalEscritura;
+    private boolean cerrado;
 
     public ArchivoRegistros(Path ruta, int tamanoRegistro,
             Function<byte[], T> decodificador,
@@ -35,8 +38,8 @@ public final class ArchivoRegistros<T> {
     }
 
     public long cantidadRegistros() throws IOException {
-        try (FileChannel canal = FileChannel.open(ruta,
-                StandardOpenOption.READ)) {
+        try {
+            FileChannel canal = obtenerCanalLectura();
             long tamanoArchivo = canal.size();
             validarLongitud(tamanoArchivo);
             return tamanoArchivo / tamanoRegistro;
@@ -47,8 +50,8 @@ public final class ArchivoRegistros<T> {
 
     public T leer(long posicionBytes) throws IOException {
         validarPosicion(posicionBytes);
-        try (FileChannel canal = FileChannel.open(ruta,
-                StandardOpenOption.READ)) {
+        try {
+            FileChannel canal = obtenerCanalLectura();
             long tamanoArchivo = canal.size();
             validarLongitud(tamanoArchivo);
             if (posicionBytes > tamanoArchivo - tamanoRegistro) {
@@ -78,8 +81,8 @@ public final class ArchivoRegistros<T> {
                             + datos.length);
         }
 
-        try (FileChannel canal = FileChannel.open(ruta,
-                StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+        try {
+            FileChannel canal = obtenerCanalEscritura();
             long tamanoArchivo = canal.size();
             validarLongitud(tamanoArchivo);
             if (posicionBytes > tamanoArchivo) {
@@ -98,6 +101,59 @@ public final class ArchivoRegistros<T> {
         } catch (IOException excepcion) {
             throw informarFallo("escribir registro en offset " + posicionBytes,
                     excepcion);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (cerrado) {
+            return;
+        }
+        cerrado = true;
+        IOException fallo = null;
+        if (canalLectura != null) {
+            try {
+                canalLectura.close();
+            } catch (IOException excepcion) {
+                fallo = excepcion;
+            }
+        }
+        if (canalEscritura != null) {
+            try {
+                canalEscritura.close();
+            } catch (IOException excepcion) {
+                if (fallo == null) {
+                    fallo = excepcion;
+                } else {
+                    fallo.addSuppressed(excepcion);
+                }
+            }
+        }
+        if (fallo != null) {
+            throw informarFallo("cerrar el archivo", fallo);
+        }
+    }
+
+    private FileChannel obtenerCanalLectura() throws IOException {
+        validarAbierto();
+        if (canalLectura == null) {
+            canalLectura = FileChannel.open(ruta, StandardOpenOption.READ);
+        }
+        return canalLectura;
+    }
+
+    private FileChannel obtenerCanalEscritura() throws IOException {
+        validarAbierto();
+        if (canalEscritura == null) {
+            canalEscritura = FileChannel.open(ruta,
+                    StandardOpenOption.READ, StandardOpenOption.WRITE);
+        }
+        return canalEscritura;
+    }
+
+    private void validarAbierto() throws IOException {
+        if (cerrado) {
+            throw new IOException("El archivo de registros está cerrado");
         }
     }
 
