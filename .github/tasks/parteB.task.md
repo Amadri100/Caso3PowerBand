@@ -16,7 +16,7 @@ updated: 2026-11-18
 - [x] T-207 | Gestión de `recordings.list`: agregar en orden cronológico y listar | status: done | deps: T-204, T-205
 - [x] T-208 | Búsqueda binaria en disco sobre `recordings.index` | status: done | deps: T-204, T-205
 - [x] T-209 | Balanced Merge Sort sobre archivos para el índice, sin cargar todos los registros en memoria | status: done | deps: T-204, T-205
-- [ ] T-210 | Reemplazo del índice solo después de ordenar y validar el resultado; conservar el índice anterior ante fallos | status: todo | deps: T-209
+- [x] T-210 | Reemplazo del índice solo después de ordenar y validar el resultado; conservar el índice anterior ante fallos | status: done | deps: T-209
 
 ## Grabación y reproducción
 

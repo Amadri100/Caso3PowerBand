@@ -20,6 +20,30 @@ public final class OrdenadorIndice {
         this.rutaIndice = Objects.requireNonNull(rutaIndice, "rutaIndice")
                 .toAbsolutePath().normalize();
     }
+
+    public void reemplazarResultado(Path rutaResultado) throws IOException {
+        new ReemplazadorIndice(rutaIndice, rutaResultado).reemplazar();
+    }
+
+    public void ordenarYReemplazar() throws IOException {
+        Path resultado = ordenar();
+        try {
+            reemplazarResultado(resultado);
+        } catch (IOException | RuntimeException fallo) {
+            try {
+                Files.deleteIfExists(resultado);
+            } catch (IOException limpieza) {
+                fallo.addSuppressed(limpieza);
+            }
+            throw fallo;
+        }
+        try {
+            Files.deleteIfExists(resultado);
+        } catch (IOException limpieza) {
+            throw limpieza;
+        }
+    }
+
     //Algoritmo que ordena el archivo de indice como tal
     public Path ordenar() throws IOException {
         //Caminoss a los archivos temporales
