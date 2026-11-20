@@ -2,7 +2,6 @@ package powerband.excepciones;
 
 import powerband.excepciones.tipos.TipoErrorArgumento;
 import powerband.util.Constantes;
-import powerband.excepciones.ConstantesExcepciones;
 
 public class ArgumentoInvalidoException extends IllegalArgumentException
         implements CodigoError {

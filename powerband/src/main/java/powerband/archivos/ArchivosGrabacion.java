@@ -9,7 +9,6 @@ import java.util.Objects;
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
 import powerband.excepciones.ArchivoException;
-import powerband.excepciones.tipos.TipoErrorArchivo;
 
 public final class ArchivosGrabacion {
 
