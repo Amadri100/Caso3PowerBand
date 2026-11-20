@@ -3,7 +3,10 @@ package powerband.archivos;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import powerband.excepciones.ArgumentoInvalidoException;
+import powerband.excepciones.tipos.TipoErrorArgumento;
 import powerband.util.Constantes;
+import powerband.excepciones.ConstantesExcepciones;
 
 public final class EncabezadoGrabacion {
 
@@ -16,8 +19,8 @@ public final class EncabezadoGrabacion {
             long posicionFinal, long fechaEpochMillis) {
         ValidacionesGenerales.validarNombre(nombre);
         if (posicionInicial < 0 || posicionFinal < posicionInicial) {
-            throw new IllegalArgumentException(
-                    "El intervalo de la grabacion no es valido");
+            throw ArgumentoInvalidoException.intervaloInvalido(
+                    posicionInicial, posicionFinal);
         }
 
         this.nombre = nombre;
@@ -59,10 +62,11 @@ public final class EncabezadoGrabacion {
     public static EncabezadoGrabacion desdeBytes(byte[] datos) {
         Objects.requireNonNull(datos, "datos");
         if (datos.length != Constantes.TAMANO_ENCABEZADO_GRABACION) {
-            throw new IllegalArgumentException(
-                    "El encabezado debe tener "
-                            + Constantes.TAMANO_ENCABEZADO_GRABACION
-                            + " bytes");
+            throw ArgumentoInvalidoException.detalle(
+                    TipoErrorArgumento.TAMANO_REGISTRO_INVALIDO,
+                    String.format(
+                            ConstantesExcepciones.MSG_ENCABEZADO_LONGITUD,
+                            Constantes.TAMANO_ENCABEZADO_GRABACION));
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(datos)

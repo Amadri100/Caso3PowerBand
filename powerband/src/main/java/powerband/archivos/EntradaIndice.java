@@ -3,7 +3,10 @@ package powerband.archivos;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import powerband.excepciones.ArgumentoInvalidoException;
+import powerband.excepciones.tipos.TipoErrorArgumento;
 import powerband.util.Constantes;
+import powerband.excepciones.ConstantesExcepciones;
 
 public final class EntradaIndice {
 
@@ -15,8 +18,8 @@ public final class EntradaIndice {
             long posicionFinal) {
         ValidacionesGenerales.validarNombre(nombre);
         if (posicionInicial < 0 || posicionFinal < posicionInicial) {
-            throw new IllegalArgumentException(
-                    "El intervalo del indice no es valido");
+            throw ArgumentoInvalidoException.intervaloInvalido(
+                    posicionInicial, posicionFinal);
         }
 
         this.nombre = nombre;
@@ -52,10 +55,11 @@ public final class EntradaIndice {
     public static EntradaIndice desdeBytes(byte[] datos) {
         Objects.requireNonNull(datos, "datos");
         if (datos.length != Constantes.TAMANO_ENTRADA_INDICE) {
-            throw new IllegalArgumentException(
-                    "La entrada de indice debe tener "
-                            + Constantes.TAMANO_ENTRADA_INDICE
-                            + " bytes");
+            throw ArgumentoInvalidoException.detalle(
+                    TipoErrorArgumento.TAMANO_REGISTRO_INVALIDO,
+                    String.format(
+                            ConstantesExcepciones.MSG_ENTRADA_INDICE_LONGITUD,
+                            Constantes.TAMANO_ENTRADA_INDICE));
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(datos)

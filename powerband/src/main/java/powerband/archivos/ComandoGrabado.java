@@ -5,9 +5,11 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import powerband.comandos.TipoAccion;
-import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.util.Constantes;
+import powerband.excepciones.ArgumentoInvalidoException;
+import powerband.excepciones.tipos.TipoErrorArgumento;
+import powerband.excepciones.ConstantesExcepciones;
 
 public final class ComandoGrabado {
 
@@ -20,8 +22,7 @@ public final class ComandoGrabado {
             IdSintetizador idSintetizador, TipoAccion tipoAccion,
             double[] parametros) {
         if (tiempoRelativoMillis < 0) {
-            throw new IllegalArgumentException(
-                    "El tiempo relativo no puede ser negativo");
+            throw ArgumentoInvalidoException.tiempoRelativoNegativo();
         }
         this.tiempoRelativoMillis = tiempoRelativoMillis;
         this.idSintetizador = Objects.requireNonNull(
@@ -69,10 +70,10 @@ public final class ComandoGrabado {
     public static ComandoGrabado desdeBytes(byte[] datos) {
         Objects.requireNonNull(datos, "datos");
         if (datos.length != Constantes.TAMANO_COMANDO_GRABADO) {
-            throw new IllegalArgumentException(
-                    "El comando grabado debe tener "
-                            + Constantes.TAMANO_COMANDO_GRABADO
-                            + " bytes");
+            throw ArgumentoInvalidoException.detalle(
+                    TipoErrorArgumento.TAMANO_REGISTRO_INVALIDO,
+                    String.format(ConstantesExcepciones.MSG_COMANDO_LONGITUD,
+                            Constantes.TAMANO_COMANDO_GRABADO));
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(datos)
@@ -92,8 +93,7 @@ public final class ComandoGrabado {
             if (indice < cantidadParametros) {
                 parametros[indice] = parametro;
             } else if (parametro != 0.0) {
-                throw new IllegalArgumentException(
-                        "Los parametros no utilizados deben ser cero");
+                throw ArgumentoInvalidoException.parametrosNoUtilizados();
             }
         }
 
@@ -105,10 +105,8 @@ public final class ComandoGrabado {
     }
 
     private static void rechazarCantidadParametros(int cantidad) {
-        String mensaje = "Cantidad de parametros fuera del maximo de "
-                + Constantes.MAXIMO_PARAMETROS_COMANDO + ": " + cantidad;
-        LoggerPowerBand.getInstance().registrarError(mensaje);
-        throw new IllegalArgumentException(mensaje);
+        throw ArgumentoInvalidoException.parametrosExceso(
+                Constantes.MAXIMO_PARAMETROS_COMANDO, cantidad);
     }
 
     @Override

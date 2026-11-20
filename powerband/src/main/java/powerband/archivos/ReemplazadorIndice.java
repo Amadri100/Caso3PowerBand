@@ -9,6 +9,11 @@ import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
+import powerband.excepciones.ArchivoException;
+import powerband.excepciones.CantidadInesperadaException;
+import powerband.excepciones.OrdenamientoException;
+import powerband.excepciones.tipos.TipoErrorArchivo;
+import powerband.excepciones.tipos.TipoErrorOrdenamiento;
 
 public final class ReemplazadorIndice {
 
@@ -28,8 +33,13 @@ public final class ReemplazadorIndice {
             validarArchivos();
             validarResultado();
             moverResultado();
+        } catch (ArchivoException excepcion) {
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString());
+            throw excepcion;
         } catch (IOException excepcion) {
-            IOException fallo = informarFallo(excepcion);
+            ArchivoException fallo = ArchivoException.errorES(
+                    rutaIndice.toString(), "reemplazar el índice", excepcion);
             LoggerPowerBand.getInstance().registrarErrorArchivo(
                     fallo.getMessage(), rutaIndice.toString());
             throw fallo;
@@ -44,25 +54,20 @@ public final class ReemplazadorIndice {
     //Validaciones de archivo, directorio etc
     private void validarArchivos() throws IOException {
         if (!Files.isRegularFile(rutaIndice)) {
-            throw new IOException(
-                    "La ruta del índice no es un archivo regular");
+            throw ArchivoException.rutaNoRegular(rutaIndice.toString());
         }
         if (!Files.isRegularFile(rutaResultado)) {
-            throw new IOException(
-                    "El resultado ordenado no es un archivo regular");
+            throw ArchivoException.rutaNoRegular(rutaResultado.toString());
         }
 
         Path directorioIndice = rutaIndice.getParent();
         Path directorioResultado = rutaResultado.getParent();
         if (directorioIndice == null
                 || !directorioIndice.equals(directorioResultado)) {
-            throw new IOException(
-                    "El índice y su resultado deben estar en el mismo "
-                            + "directorio");
+            throw ArchivoException.rutaNoRegular(rutaResultado.toString());
         }
         if (rutaIndice.equals(rutaResultado)) {
-            throw new IOException(
-                    "El resultado no puede reemplazar directamente su origen");
+            throw ArchivoException.rutaNoRegular(rutaResultado.toString());
         }
     }
     //Validacion de duplicados y ordenados.
@@ -78,9 +83,9 @@ public final class ReemplazadorIndice {
         }
 
         if (cantidadResultado != cantidadIndice) {
-            throw new IOException(
-                    "El resultado tiene " + cantidadResultado
-                            + " registros; se esperaban " + cantidadIndice);
+            throw new CantidadInesperadaException(
+                    rutaResultado.toString(), cantidadIndice,
+                    cantidadResultado);
         }
 
         EntradaIndice anterior = null;
@@ -92,9 +97,9 @@ public final class ReemplazadorIndice {
                 if (anterior != null
                         && ComparadorNombres.INSTANCIA.compare(
                                 anterior.nombre(), actual.nombre()) >= 0) {
-                    throw new IOException(
-                            "El resultado no está estrictamente ordenado "
-                                    + "o contiene nombres duplicados");
+                    throw new OrdenamientoException(
+                            TipoErrorOrdenamiento.INDICE_DESORDENADO,
+                            rutaResultado.toString(), actual.nombre());
                 }
                 anterior = actual;
             }
@@ -110,18 +115,13 @@ public final class ReemplazadorIndice {
                     StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException excepcion) {
-            throw new IOException(
-                    "El sistema de archivos no permite reemplazar "
-                            + "recordings.index de forma atomica",
+            throw new ArchivoException(
+                    TipoErrorArchivo.REEMPLAZO_NO_ATOMICO,
+                    rutaIndice.toString(),
                     excepcion);
         }
     }
     //Crea la excepcion
-    private IOException informarFallo(IOException excepcion) {
-        String mensaje = "No se pudo reemplazar el índice " + rutaIndice
-                + " con " + rutaResultado + ": " + excepcion.getMessage();
-        return new IOException(mensaje, excepcion);
-    }
     //Obtener un archivo del indice
     private static ArchivoRegistros<EntradaIndice> crearArchivoRegistros(
             Path ruta) {

@@ -22,6 +22,11 @@ public class OrdenamientoException
         super(tipo, ruta, esperada, obtenida);
     }
 
+    public OrdenamientoException(TipoErrorOrdenamiento tipo,
+            String ruta, Throwable causa, Object... argumentos) {
+        super(tipo, ruta, causa, argumentos);
+    }
+
     public TipoErrorOrdenamiento tipoOrdenamiento() {
         return (TipoErrorOrdenamiento) tipo();
     }

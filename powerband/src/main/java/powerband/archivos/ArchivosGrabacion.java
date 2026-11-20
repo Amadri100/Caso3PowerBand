@@ -8,6 +8,8 @@ import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
+import powerband.excepciones.ArchivoException;
+import powerband.excepciones.tipos.TipoErrorArchivo;
 
 public final class ArchivosGrabacion {
 
@@ -45,12 +47,12 @@ public final class ArchivosGrabacion {
             crearSiFalta(archivoLista);
             crearSiFalta(archivoIndice);
         } catch (IOException excepcion) {
-            String mensaje = "No se pudieron preparar los archivos de "
-                    + "grabacion en " + rutaDirectorio + ": "
-                    + excepcion.getMessage();
+            ArchivoException fallo = ArchivoException.errorES(
+                    rutaDirectorio.toString(),
+                    "preparar los archivos de grabación", excepcion);
             LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    mensaje, rutaDirectorio.toString());
-            throw new IOException(mensaje, excepcion);
+                    fallo.getMessage(), rutaDirectorio.toString());
+            throw fallo;
         }
 
         return new ArchivosGrabacion(rutaDirectorio, archivoMusica,
@@ -80,10 +82,7 @@ public final class ArchivosGrabacion {
                     "Archivo de grabacion creado: " + ruta);
         } catch (FileAlreadyExistsException excepcion) {
             if (!Files.isRegularFile(ruta)) {
-                throw new IOException(
-                        "La ruta requerida no es un archivo regular: "
-                                + ruta,
-                        excepcion);
+                throw ArchivoException.rutaNoRegular(ruta.toString());
             }
         }
     }

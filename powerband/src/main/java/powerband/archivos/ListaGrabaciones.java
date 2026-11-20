@@ -11,6 +11,12 @@ import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
+import powerband.excepciones.ArchivoException;
+import powerband.excepciones.CantidadInesperadaException;
+import powerband.excepciones.NombreDuplicadoException;
+import powerband.excepciones.OrdenamientoException;
+import powerband.excepciones.tipos.TipoErrorArchivo;
+import powerband.excepciones.tipos.TipoErrorOrdenamiento;
 
 public final class ListaGrabaciones {
 
@@ -42,13 +48,23 @@ public final class ListaGrabaciones {
             }
             reemplazarArchivo(rutaTemporal);
             rutaTemporal = null;
+        } catch (ArchivoException excepcion) {
+            eliminarTemporal(rutaTemporal, excepcion);
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    excepcion.getMessage(), ruta.toString());
+            throw excepcion;
         } catch (IOException excepcion) {
-            IOException contextual = informarFallo(
-                    "agregar una grabacion a recordings.list", excepcion);
-            eliminarTemporal(rutaTemporal, contextual);
-            throw contextual;
+            ArchivoException fallo = ArchivoException.errorES(
+                    ruta.toString(), "agregar una grabación",
+                    excepcion);
+            eliminarTemporal(rutaTemporal, fallo);
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    fallo.getMessage(), ruta.toString());
+            throw fallo;
         } catch (RuntimeException excepcion) {
             eliminarTemporal(rutaTemporal, excepcion);
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    excepcion.getMessage(), ruta.toString());
             throw excepcion;
         }
     }
@@ -75,11 +91,9 @@ public final class ListaGrabaciones {
                     archivo.leer(posicionBytes(indice));
             if (ComparadorNombres.INSTANCIA.compare(
                     existente.nombre(), nuevaEntrada.nombre()) == 0) {
-                String mensaje = "Nombre de grabacion duplicado: "
-                        + nuevaEntrada.nombre();
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
-                        mensaje, ruta.toString());
-                throw new IllegalArgumentException(mensaje);
+                throw new NombreDuplicadoException(
+                        existente.nombre(), nuevaEntrada.nombre(),
+                        ruta.toString());
             }
             if (posicionInsercion == cantidad
                     && compararEntradas(existente, nuevaEntrada) > 0) {
@@ -114,9 +128,10 @@ public final class ListaGrabaciones {
             ArchivoRegistros<EntradaListaGrabacion> listaTemporal,
             long cantidadEsperada) throws IOException {
         if (listaTemporal.cantidadRegistros() != cantidadEsperada) {
-            throw new IOException(
-                    "La lista temporal tiene una cantidad inesperada "
-                            + "de registros");
+            throw new CantidadInesperadaException(
+                    ruta.toString(),
+                    cantidadEsperada,
+                    listaTemporal.cantidadRegistros());
         }
 
         EntradaListaGrabacion anterior = null;
@@ -124,9 +139,9 @@ public final class ListaGrabaciones {
             EntradaListaGrabacion actual =
                     listaTemporal.leer(posicionBytes(indice));
             if (anterior != null && compararEntradas(anterior, actual) >= 0) {
-                throw new IOException(
-                        "La lista temporal no está ordenada o contiene "
-                                + "nombres duplicados");
+                throw new OrdenamientoException(
+                        TipoErrorOrdenamiento.INDICE_DESORDENADO,
+                        ruta.toString(), actual.nombre());
             }
             anterior = actual;
         }
@@ -138,9 +153,9 @@ public final class ListaGrabaciones {
                     StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException excepcion) {
-            throw new IOException(
-                    "El sistema de archivos no permite reemplazar "
-                            + "recordings.list de forma atomica",
+            throw new ArchivoException(
+                    TipoErrorArchivo.REEMPLAZO_NO_ATOMICO,
+                    ruta.toString(),
                     excepcion);
         }
     }
@@ -156,14 +171,6 @@ public final class ListaGrabaciones {
         }
     }
 
-    private IOException informarFallo(String operacion,
-            IOException excepcion) {
-        String mensaje = "No se pudo " + operacion + " en " + ruta
-                + ": " + excepcion.getMessage();
-        LoggerPowerBand.getInstance().registrarErrorArchivo(
-                mensaje, ruta.toString());
-        return new IOException(mensaje, excepcion);
-    }
 
     private static int compararEntradas(EntradaListaGrabacion entrada1,
             EntradaListaGrabacion entrada2) {

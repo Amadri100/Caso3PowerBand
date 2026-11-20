@@ -1,6 +1,5 @@
 package powerband.archivos;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -9,7 +8,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.function.Function;
 
-import powerband.logging.LoggerPowerBand;
+import powerband.excepciones.ArchivoException;
+import powerband.excepciones.ArchivoIncompletoException;
+import powerband.excepciones.ArgumentoInvalidoException;
 
 //Permite facilitar las operaciones con archivos y hacerlo de forma flexible
 public final class ArchivoRegistros<T> implements AutoCloseable {
@@ -27,8 +28,7 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
             Function<T, byte[]> serializador) {
         this.ruta = Objects.requireNonNull(ruta, "ruta");
         if (tamanoRegistro <= 0) {
-            throw new IllegalArgumentException(
-                    "El tamaño del registro debe ser positivo");
+            throw ArgumentoInvalidoException.tamanoRegistroInvalido();
         }
         this.tamanoRegistro = tamanoRegistro;
         this.decodificador = Objects.requireNonNull(
@@ -43,8 +43,11 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
             long tamanoArchivo = canal.size();
             validarLongitud(tamanoArchivo);
             return tamanoArchivo / tamanoRegistro;
+        } catch (ArchivoException | ArgumentoInvalidoException excepcion) {
+            throw excepcion;
         } catch (IOException excepcion) {
-            throw informarFallo("contar registros", excepcion);
+            throw ArchivoException.errorES(
+                    ruta.toString(), "contar registros", excepcion);
         }
     }
 
@@ -55,17 +58,18 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
             long tamanoArchivo = canal.size();
             validarLongitud(tamanoArchivo);
             if (posicionBytes > tamanoArchivo - tamanoRegistro) {
-                throw new EOFException(
-                        "No hay un registro completo en el offset "
-                                + posicionBytes);
+                throw ArchivoException.registroFueraDeRango(
+                        ruta.toString(), posicionBytes);
             }
 
             ByteBuffer buffer = ByteBuffer.allocate(tamanoRegistro);
             leerCompletamente(canal, buffer, posicionBytes);
             return decodificar(buffer.array());
+        } catch (ArchivoException | ArgumentoInvalidoException excepcion) {
+            throw excepcion;
         } catch (IOException excepcion) {
-            throw informarFallo("leer registro en offset " + posicionBytes,
-                    excepcion);
+            throw ArchivoException.errorES(ruta.toString(),
+                    "leer registro en offset " + posicionBytes, excepcion);
         }
     }
 
@@ -75,10 +79,7 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
         byte[] datos = Objects.requireNonNull(
                 serializador.apply(registro), "registro serializado");
         if (datos.length != tamanoRegistro) {
-            throw new IllegalArgumentException(
-                    "El registro serializado debe tener "
-                            + tamanoRegistro + " bytes; se recibieron "
-                            + datos.length);
+            throw ArgumentoInvalidoException.tamanoRegistroInvalido();
         }
 
         try {
@@ -86,20 +87,21 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
             long tamanoArchivo = canal.size();
             validarLongitud(tamanoArchivo);
             if (posicionBytes > tamanoArchivo) {
-                throw new IOException(
-                        "El offset " + posicionBytes
-                                + " crearia un espacio despues del final "
-                                + "del archivo (" + tamanoArchivo + " bytes)");
+                throw ArchivoException.escrituraConHueco(
+                        ruta.toString(), posicionBytes, tamanoArchivo);
             }
             if (posicionBytes > Long.MAX_VALUE - tamanoRegistro) {
-                throw new IOException(
-                        "El offset excede el limite de posiciones del archivo");
+                throw ArchivoException.escrituraConHueco(
+                        ruta.toString(), posicionBytes, tamanoArchivo);
             }
 
             ByteBuffer buffer = ByteBuffer.wrap(datos);
             escribirCompletamente(canal, buffer, posicionBytes);
+        } catch (ArchivoException | ArgumentoInvalidoException excepcion) {
+            throw excepcion;
         } catch (IOException excepcion) {
-            throw informarFallo("escribir registro en offset " + posicionBytes,
+            throw ArchivoException.errorES(ruta.toString(),
+                    "escribir registro en offset " + posicionBytes,
                     excepcion);
         }
     }
@@ -130,7 +132,8 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
             }
         }
         if (fallo != null) {
-            throw informarFallo("cerrar el archivo", fallo);
+            throw ArchivoException.errorES(
+                    ruta.toString(), "cerrar el archivo", fallo);
         }
     }
 
@@ -153,25 +156,22 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
 
     private void validarAbierto() throws IOException {
         if (cerrado) {
-            throw new IOException("El archivo de registros está cerrado");
+            throw ArchivoException.archivoCerrado(ruta.toString());
         }
     }
 
     private void validarPosicion(long posicionBytes) {
         if (posicionBytes < 0 || posicionBytes % tamanoRegistro != 0) {
-            throw new IllegalArgumentException(
-                    "El offset debe ser no negativo y multiplo de "
-                            + tamanoRegistro + ": " + posicionBytes);
+            throw ArgumentoInvalidoException.offsetInvalido(
+                    tamanoRegistro, posicionBytes);
         }
     }
 
     private void validarLongitud(long tamanoArchivo) throws IOException {
         long residuo = tamanoArchivo % tamanoRegistro;
         if (residuo != 0) {
-            throw new IOException(
-                    "Archivo incompleto: tamaño " + tamanoArchivo
-                            + " bytes, registro de " + tamanoRegistro
-                            + " bytes, residuo " + residuo);
+            throw new ArchivoIncompletoException(
+                    ruta.toString(), tamanoArchivo, tamanoRegistro);
         }
     }
 
@@ -179,12 +179,12 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
         try {
             T registro = decodificador.apply(datos);
             if (registro == null) {
-                throw new IllegalArgumentException(
-                        "El decodificador devolvio un registro nulo");
+                throw ArgumentoInvalidoException.nombreInvalido();
             }
             return registro;
-        } catch (IllegalArgumentException excepcion) {
-            throw new IOException("El registro no cumple su formato", excepcion);
+        } catch (ArgumentoInvalidoException excepcion) {
+            throw ArchivoException.registroCorrupto(
+                    ruta.toString(), excepcion);
         }
     }
 
@@ -193,10 +193,12 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
         while (buffer.hasRemaining()) {
             int leidos = canal.read(buffer, posicionBytes + buffer.position());
             if (leidos < 0) {
-                throw new EOFException("Fin inesperado dentro del registro");
+                throw ArchivoException.registroFueraDeRango(
+                        ruta.toString(), posicionBytes);
             }
             if (leidos == 0) {
-                throw new IOException("La lectura no avanzo");
+                throw ArchivoException.errorES(
+                        ruta.toString(), "leer el registro", null);
             }
         }
     }
@@ -206,17 +208,10 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
         while (buffer.hasRemaining()) {
             int escritos = canal.write(buffer, posicionBytes + buffer.position());
             if (escritos == 0) {
-                throw new IOException("La escritura no avanzo");
+                throw ArchivoException.errorES(
+                        ruta.toString(), "escribir el registro", null);
             }
         }
     }
 
-    private IOException informarFallo(String operacion,
-            IOException excepcion) {
-        String mensaje = "No se pudo " + operacion + " en " + ruta
-                + ": " + excepcion.getMessage();
-        LoggerPowerBand.getInstance().registrarErrorArchivo(
-                mensaje, ruta.toString());
-        return new IOException(mensaje, excepcion);
-    }
 }

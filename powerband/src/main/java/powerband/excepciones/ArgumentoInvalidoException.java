@@ -2,6 +2,7 @@ package powerband.excepciones;
 
 import powerband.excepciones.tipos.TipoErrorArgumento;
 import powerband.util.Constantes;
+import powerband.excepciones.ConstantesExcepciones;
 
 public class ArgumentoInvalidoException extends IllegalArgumentException
         implements CodigoError {
@@ -19,6 +20,12 @@ public class ArgumentoInvalidoException extends IllegalArgumentException
     protected ArgumentoInvalidoException(TipoErrorArgumento tipo,
             Throwable causa, Object... argumentos) {
         super(tipo.codigo() + " " + tipo.formatear(argumentos), causa);
+        this.tipo = tipo;
+    }
+
+    protected ArgumentoInvalidoException(TipoErrorArgumento tipo,
+            Throwable causa, String detalle) {
+        super(tipo.codigo() + " " + detalle, causa);
         this.tipo = tipo;
     }
 
@@ -46,6 +53,44 @@ public class ArgumentoInvalidoException extends IllegalArgumentException
                 Constantes.LONGITUD_MAXIMA_NOMBRE);
     }
 
+    public static ArgumentoInvalidoException nombreNulo() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO,
+                ConstantesExcepciones.MSG_NOMBRE_NULO);
+    }
+
+    public static ArgumentoInvalidoException nombreConNulos() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO,
+                ConstantesExcepciones.MSG_NOMBRE_NULO_BAJO);
+    }
+
+    public static ArgumentoInvalidoException nombreUtf8Invalido(
+            Throwable causa) {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO, causa,
+                ConstantesExcepciones.MSG_NOMBRE_UTF8_INVALIDO);
+    }
+
+    public static ArgumentoInvalidoException rellenoNombreInvalido() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO,
+                ConstantesExcepciones.MSG_RELLENO_NOMBRE_INVALIDO);
+    }
+
+    public static ArgumentoInvalidoException nombreVacio() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO,
+                ConstantesExcepciones.MSG_NOMBRE_VACIO);
+    }
+
+    public static ArgumentoInvalidoException nombreCodificadoInvalido(
+            Throwable causa) {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO, causa,
+                ConstantesExcepciones.MSG_NOMBRE_CODIFICADO_INVALIDO);
+    }
+
     public static ArgumentoInvalidoException offsetInvalido(
             int tamanoRegistro, long posicion) {
         return new ArgumentoInvalidoException(
@@ -62,6 +107,23 @@ public class ArgumentoInvalidoException extends IllegalArgumentException
     public static ArgumentoInvalidoException tamanoRegistroInvalido() {
         return new ArgumentoInvalidoException(
                 TipoErrorArgumento.TAMANO_REGISTRO_INVALIDO);
+    }
+
+    public static ArgumentoInvalidoException detalle(
+            TipoErrorArgumento tipo, String detalle) {
+        return new ArgumentoInvalidoException(tipo, detalle);
+    }
+
+    public static ArgumentoInvalidoException tiempoRelativoNegativo() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.PARAMETROS_EXCESO,
+                ConstantesExcepciones.MSG_TIEMPO_RELATIVO_NEGATIVO);
+    }
+
+    public static ArgumentoInvalidoException parametrosNoUtilizados() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.PARAMETROS_EXCESO,
+                ConstantesExcepciones.MSG_PARAMETROS_NO_UTILIZADOS);
     }
 
     public static ArgumentoInvalidoException parametrosExceso(

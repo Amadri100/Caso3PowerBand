@@ -11,6 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
+import powerband.excepciones.NombreDuplicadoException;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +67,7 @@ class ListaGrabacionesTest {
         lista.agregar(new EntradaListaGrabacion("sesion", 100));
         byte[] contenidoAntes = Files.readAllBytes(rutas.archivoLista());
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NombreDuplicadoException.class,
                 () -> lista.agregar(
                         new EntradaListaGrabacion("SESION", 50)));
 

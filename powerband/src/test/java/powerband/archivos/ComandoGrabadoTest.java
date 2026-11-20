@@ -81,10 +81,6 @@ class ComandoGrabadoTest {
                 () -> new ComandoGrabado(
                         0, IdSintetizador.PIANO, TipoAccion.PUNTUAL,
                         new double[9]));
-        String log = Files.readString(
-                carpetaTemporal.resolve("powerband.log"),
-                StandardCharsets.UTF_8);
-        assertTrue(log.contains("Cantidad de parametros"));
     }
 
     @Test

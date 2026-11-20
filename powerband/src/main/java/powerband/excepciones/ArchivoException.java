@@ -34,7 +34,10 @@ public class ArchivoException extends IOException
 
     public ArchivoException(TipoErrorArchivo tipo, String ruta,
             Throwable causa) {
-        super(mensaje(tipo, ruta), causa);
+        super(tipo == TipoErrorArchivo.REEMPLAZO_NO_ATOMICO
+                ? mensaje(tipo, ruta, ruta)
+                : mensaje(tipo, ruta),
+                causa);
         this.tipo = tipo;
         this.ruta = ruta;
     }
@@ -105,6 +108,10 @@ public class ArchivoException extends IOException
 
     public final CodigoError tipo() {
         return tipo;
+    }
+
+    public final TipoErrorArchivo tipoArchivo() {
+        return (TipoErrorArchivo) tipo;
     }
 
     public final String ruta() {

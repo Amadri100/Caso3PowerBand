@@ -18,8 +18,9 @@ updated: 2026-11-18
 - [x] T-209 | Balanced Merge Sort sobre archivos para el índice, sin cargar todos los registros en memoria | status: done | deps: T-204, T-205
 - [x] T-210 | Reemplazo del índice solo después de ordenar y validar el resultado; conservar el índice anterior ante fallos | status: done | deps: T-209
 
+Ajuste Excepciones:
 - [x] T-210-1 | Creación de nuevas clases de excepciones | status: done
-- [ ] T-210-2 | Implementacion de excepciones en el codigo | status: todo
+- [x] T-210-2 | Implementación de excepciones en el código | status: done
 
 ## Grabación y reproducción
 

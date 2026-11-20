@@ -3,7 +3,10 @@ package powerband.archivos;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import powerband.excepciones.ArgumentoInvalidoException;
+import powerband.excepciones.tipos.TipoErrorArgumento;
 import powerband.util.Constantes;
+import powerband.excepciones.ConstantesExcepciones;
 
 public final class EntradaListaGrabacion {
 
@@ -39,10 +42,11 @@ public final class EntradaListaGrabacion {
     public static EntradaListaGrabacion desdeBytes(byte[] datos) {
         Objects.requireNonNull(datos, "datos");
         if (datos.length != Constantes.TAMANO_ENTRADA_LISTA_GRABACION) {
-            throw new IllegalArgumentException(
-                    "La entrada de lista debe tener "
-                            + Constantes.TAMANO_ENTRADA_LISTA_GRABACION
-                            + " bytes");
+            throw ArgumentoInvalidoException.detalle(
+                    TipoErrorArgumento.TAMANO_REGISTRO_INVALIDO,
+                    String.format(
+                            ConstantesExcepciones.MSG_ENTRADA_LISTA_LONGITUD,
+                            Constantes.TAMANO_ENTRADA_LISTA_GRABACION));
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(datos)

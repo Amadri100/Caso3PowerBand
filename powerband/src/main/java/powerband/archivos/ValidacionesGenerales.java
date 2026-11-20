@@ -7,6 +7,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import powerband.excepciones.ArgumentoInvalidoException;
 import powerband.util.Constantes;
 
 public interface ValidacionesGenerales {
@@ -15,19 +16,17 @@ public interface ValidacionesGenerales {
         byte[] bytes = codificarNombre(nombre);
         if (bytes.length == 0
                 || bytes.length > Constantes.LONGITUD_MAXIMA_NOMBRE) {
-            throw new IllegalArgumentException(
-                    "El nombre debe ocupar entre 1 y "
-                            + Constantes.LONGITUD_MAXIMA_NOMBRE
-                            + " bytes UTF-8");
+            throw ArgumentoInvalidoException.nombreInvalido();
         }
         if (nombre.indexOf('\0') >= 0) {
-            throw new IllegalArgumentException(
-                    "El nombre no puede contener bytes nulos");
+            throw ArgumentoInvalidoException.nombreConNulos();
         }
     }
 
     static byte[] codificarNombre(String nombre) {
-        Objects.requireNonNull(nombre, "nombre");
+        if (nombre == null) {
+            throw ArgumentoInvalidoException.nombreNulo();
+        }
         try {
             ByteBuffer codificado = StandardCharsets.UTF_8.newEncoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
@@ -37,8 +36,7 @@ public interface ValidacionesGenerales {
             codificado.get(bytes);
             return bytes;
         } catch (CharacterCodingException excepcion) {
-            throw new IllegalArgumentException(
-                    "El nombre no es una cadena UTF-8 valida", excepcion);
+            throw ArgumentoInvalidoException.nombreUtf8Invalido(excepcion);
         }
     }
 
@@ -49,12 +47,11 @@ public interface ValidacionesGenerales {
         }
         for (int indice = longitud; indice < bytes.length; indice++) {
             if (bytes[indice] != 0) {
-                throw new IllegalArgumentException(
-                        "El relleno del nombre debe contener ceros");
+                throw ArgumentoInvalidoException.rellenoNombreInvalido();
             }
         }
         if (longitud == 0) {
-            throw new IllegalArgumentException("El nombre no puede estar vacio");
+            throw ArgumentoInvalidoException.nombreVacio();
         }
         try {
             return StandardCharsets.UTF_8.newDecoder()
@@ -63,9 +60,7 @@ public interface ValidacionesGenerales {
                     .decode(ByteBuffer.wrap(bytes, 0, longitud))
                     .toString();
         } catch (CharacterCodingException excepcion) {
-            throw new IllegalArgumentException(
-                    "El nombre codificado no es UTF-8 valido",
-                    excepcion);
+            throw ArgumentoInvalidoException.nombreCodificadoInvalido(excepcion);
         }
     }
 }

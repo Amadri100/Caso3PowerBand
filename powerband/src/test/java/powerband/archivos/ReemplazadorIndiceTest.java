@@ -56,8 +56,7 @@ class ReemplazadorIndiceTest {
                 () -> new ReemplazadorIndice(
                         rutaIndice, resultadoDuplicado).reemplazar());
 
-        assertTrue(duplicado.getMessage().contains(
-                "resultado no está estrictamente ordenado"));
+        assertTrue(duplicado.getMessage().contains("ORD-002"));
         assertArrayEquals(indiceAnterior, Files.readAllBytes(rutaIndice));
         assertTrue(Files.exists(resultadoDuplicado));
 

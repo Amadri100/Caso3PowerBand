@@ -7,6 +7,12 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import powerband.excepciones.CantidadInesperadaException;
+import powerband.excepciones.ArchivoException;
+import powerband.excepciones.EstadoInvalidoException;
+import powerband.excepciones.NombreDuplicadoException;
+import powerband.excepciones.OrdenamientoException;
+import powerband.excepciones.tipos.TipoErrorOrdenamiento;
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
 
@@ -27,21 +33,7 @@ public final class OrdenadorIndice {
 
     public void ordenarYReemplazar() throws IOException {
         Path resultado = ordenar();
-        try {
-            reemplazarResultado(resultado);
-        } catch (IOException | RuntimeException fallo) {
-            try {
-                Files.deleteIfExists(resultado);
-            } catch (IOException limpieza) {
-                fallo.addSuppressed(limpieza);
-            }
-            throw fallo;
-        }
-        try {
-            Files.deleteIfExists(resultado);
-        } catch (IOException limpieza) {
-            throw limpieza;
-        }
+        reemplazarResultado(resultado);
     }
 
     //Algoritmo que ordena el archivo de indice como tal
@@ -96,17 +88,27 @@ public final class OrdenadorIndice {
             //Validación final
             validarResultado(origenOrdenado, cantidad);
             return entregarResultado(origenOrdenado, temporales);
+        } catch (OrdenamientoException excepcion) {
+            limpiarTemporales(temporales, excepcion);
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString());
+            throw excepcion;
+        } catch (ArchivoException excepcion) {
+            limpiarTemporales(temporales, excepcion);
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString());
+            throw excepcion;
         } catch (IOException excepcion) {
-            IOException fallo = new IOException(
-                    "No se pudo ordenar el índice " + rutaIndice + ": "
-                            + excepcion.getMessage(),
-                    excepcion);
+            ArchivoException fallo = ArchivoException.errorES(
+                    rutaIndice.toString(), "ordenar el índice", excepcion);
             limpiarTemporales(temporales, fallo);
             LoggerPowerBand.getInstance().registrarErrorArchivo(
                     fallo.getMessage(), rutaIndice.toString());
             throw fallo;
         } catch (RuntimeException excepcion) {
             limpiarTemporales(temporales, excepcion);
+            LoggerPowerBand.getInstance().registrarErrorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString());
             throw excepcion;
         }
     }
@@ -212,10 +214,10 @@ public final class OrdenadorIndice {
                     // Empate según el comparador: "Ana" y "ana" son duplicados
                     // (aquí ambas entradas existen, no hay nulls)
                     if (comparacion == 0) {
-                        throw new IOException(
-                                "El índice contiene nombres duplicados: "
-                                        + entradaIzquierda.nombre() + " / "
-                                        + entradaDerecha.nombre());
+                        throw new NombreDuplicadoException(
+                                entradaIzquierda.nombre(),
+                                entradaDerecha.nombre(),
+                                rutaIndice.toString());
                     }
 
                     if (comparacion < 0) {
@@ -260,9 +262,9 @@ public final class OrdenadorIndice {
                 EntradaIndice actual = resultado.leer(posicionBytes(indice));
                 if (anterior != null && ComparadorNombres.INSTANCIA.compare(
                         anterior.nombre(), actual.nombre()) >= 0) {
-                    throw new IOException(
-                            "El índice contiene nombres duplicados o no "
-                                    + "quedó estrictamente ordenado");
+                    throw new OrdenamientoException(
+                            TipoErrorOrdenamiento.INDICE_DESORDENADO,
+                            rutaResultado.toString(), actual.nombre());
                 }
                 anterior = actual;
             }
@@ -275,10 +277,9 @@ public final class OrdenadorIndice {
                 crearArchivoRegistros(ruta)) {
             long cantidadObtenida = archivo.cantidadRegistros();
             if (cantidadObtenida != cantidadEsperada) {
-                throw new IOException(
-                        "Se esperaban " + cantidadEsperada
-                                + " registros y se obtuvieron "
-                                + cantidadObtenida);
+                throw new CantidadInesperadaException(
+                        ruta.toString(), cantidadEsperada,
+                        cantidadObtenida);
             }
         }
     }
@@ -294,9 +295,7 @@ public final class OrdenadorIndice {
     private Path entregarResultado(Path resultado, Set<Path> temporales) {
         //Si no existia el elemento se da un error
         if (!temporales.remove(resultado)) {
-            throw new IllegalStateException(
-                    "El resultado no pertenece a los temporales del "
-                            + "ordenamiento");
+            throw EstadoInvalidoException.temporalAjeno();
         }
         return resultado;
     }
