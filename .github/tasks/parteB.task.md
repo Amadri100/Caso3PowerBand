@@ -28,8 +28,8 @@ Ajuste Excepciones:
 - [x] T-212 | Detener grabación: solicitar nombre, rechazar duplicados con la búsqueda, escribir encabezado y actualizar lista e índice | status: done | deps: T-211, T-207, T-208, T-210
 - [x] T-213 | Limpieza de sesión incompleta ante error, sin alterar datos válidos, y registro del error | status: done | deps: T-211, R-006
 - [x] T-214 | Carga: listar sesiones, buscar el nombre en el índice y leer el intervalo de bytes en `recordings.music` | status: done | deps: T-207, T-208
-- [ ] T-215 | Reproductor: leer comandos con buffering y enviarlos en orden respetando los tiempos relativos al inicio | status: todo | deps: T-214, R-009
-- [ ] T-216 | Fábrica que reconstruye un `Comando` desde un `ComandoGrabado` usando un resolutor de `IdSintetizador` a `Sintetizador` | status: todo | deps: T-202, R-009
+- [ ] T-215 | Reproductor: leer comandos con buffering y enviarlos en orden respetando los tiempos relativos al inicio | status: todo | deps: T-214, T-216, R-009
+- [x] T-216 | Fábrica que reconstruye un `Comando` desde un `ComandoGrabado` usando un resolutor de `IdSintetizador` a `Sintetizador` | status: done | deps: T-202, R-009
 - [ ] T-217 | Detener la reproducción de forma controlada y reproducir los comandos de finalización de notas sostenidas | status: todo | deps: T-215
 - [ ] T-218 | Pruebas de archivos: registros de tamaño fijo, residuo inválido, duplicados, búsqueda binaria y merge sort | status: todo | deps: T-210
 - [ ] T-219 | Pruebas de grabar, buscar y reproducir con comandos simulados (orden e intervalos) | status: todo | deps: T-217, T-212
