@@ -98,13 +98,9 @@ public final class Grabador implements ObservadorComandos {
             try {
                 archivoTemporal.close();
             } catch (IOException excepcion) {
-                ArchivoException fallo = ArchivoException.errorES(
+                throw ArchivoException.errorES(
                         archivoSesionTemporal.toString(),
                         "cerrar la sesión de grabación", excepcion);
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
-                        fallo.getMessage(),
-                        archivoSesionTemporal.toString());
-                throw fallo;
             }
         }
     }

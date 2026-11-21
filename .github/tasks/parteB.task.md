@@ -25,8 +25,8 @@ Ajuste Excepciones:
 ## Grabación y reproducción
 
 - [x] T-211 | Grabador: implementa `ObservadorComandos`, registra el tiempo base y escribe comandos con su tiempo relativo en tiempo real | status: done | deps: R-010, T-202, T-205
-- [ ] T-212 | Detener grabación: solicitar nombre, rechazar duplicados con la búsqueda, escribir encabezado y actualizar lista e índice | status: todo | deps: T-211, T-207, T-208, T-210
-- [ ] T-213 | Limpieza de sesión incompleta ante error, sin alterar datos válidos, y registro del error | status: todo | deps: T-211, R-006
+- [x] T-212 | Detener grabación: solicitar nombre, rechazar duplicados con la búsqueda, escribir encabezado y actualizar lista e índice | status: done | deps: T-211, T-207, T-208, T-210
+- [x] T-213 | Limpieza de sesión incompleta ante error, sin alterar datos válidos, y registro del error | status: done | deps: T-211, R-006
 - [ ] T-214 | Carga: listar sesiones, buscar el nombre en el índice y leer el intervalo de bytes en `recordings.music` | status: todo | deps: T-207, T-208
 - [ ] T-215 | Reproductor: leer comandos con buffering y enviarlos en orden respetando los tiempos relativos al inicio | status: todo | deps: T-214, R-009
 - [ ] T-216 | Fábrica que reconstruye un `Comando` desde un `ComandoGrabado` usando un resolutor de `IdSintetizador` a `Sintetizador` | status: todo | deps: T-202, R-009

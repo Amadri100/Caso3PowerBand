@@ -29,9 +29,17 @@ public final class ReemplazadorIndice {
     //Realiza validaciones y lo muevo, 
     //En caso de error manda una excepcion
     public void reemplazar() throws IOException {
+        try (ArchivoRegistros<EntradaIndice> indice =
+                crearArchivoRegistros(rutaIndice)) {
+            reemplazar(indice.cantidadRegistros());
+        }
+    }
+
+    public void reemplazar(long cantidadResultadoEsperada)
+            throws IOException {
         try {
             validarArchivos();
-            validarResultado();
+            validarResultado(cantidadResultadoEsperada);
             moverResultado();
         } catch (ArchivoException excepcion) {
             LoggerPowerBand.getInstance().registrarErrorArchivo(
@@ -71,20 +79,19 @@ public final class ReemplazadorIndice {
         }
     }
     //Validacion de duplicados y ordenados.
-    private void validarResultado() throws IOException {
-        long cantidadIndice;
+    private void validarResultado(long cantidadResultadoEsperada)
+            throws IOException {
         long cantidadResultado;
         try (ArchivoRegistros<EntradaIndice> indice =
                     crearArchivoRegistros(rutaIndice);
                 ArchivoRegistros<EntradaIndice> resultado =
                     crearArchivoRegistros(rutaResultado)) {
-            cantidadIndice = indice.cantidadRegistros();
             cantidadResultado = resultado.cantidadRegistros();
         }
 
-        if (cantidadResultado != cantidadIndice) {
+        if (cantidadResultado != cantidadResultadoEsperada) {
             throw new CantidadInesperadaException(
-                    rutaResultado.toString(), cantidadIndice,
+                    rutaResultado.toString(), cantidadResultadoEsperada,
                     cantidadResultado);
         }
 
@@ -115,6 +122,22 @@ public final class ReemplazadorIndice {
                     StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException excepcion) {
+            throw new ArchivoException(
+                    TipoErrorArchivo.REEMPLAZO_NO_ATOMICO,
+                    rutaIndice.toString(),
+                    excepcion);
+        } catch (java.nio.file.AccessDeniedException excepcion) {
+            try {
+                Files.move(rutaResultado, rutaIndice,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException fallback) {
+                excepcion.addSuppressed(fallback);
+                throw new ArchivoException(
+                        TipoErrorArchivo.REEMPLAZO_NO_ATOMICO,
+                        rutaIndice.toString(),
+                        excepcion);
+            }
+        } catch (IOException excepcion) {
             throw new ArchivoException(
                     TipoErrorArchivo.REEMPLAZO_NO_ATOMICO,
                     rutaIndice.toString(),
