@@ -14,6 +14,7 @@ import powerband.archivos.EncabezadoGrabacion;
 import powerband.archivos.EntradaIndice;
 import powerband.archivos.EntradaListaGrabacion;
 import powerband.archivos.ListaGrabaciones;
+import powerband.comandos.BusComandos;
 import powerband.comandos.Comando;
 import powerband.comandos.TipoAccion;
 import powerband.excepciones.ArgumentoInvalidoException;
@@ -190,6 +191,83 @@ class FinalizadorGrabacionTest {
     }
 
     @Test
+    void falloAlRegistrarComandoImpidePersistirLaSesion()
+            throws IOException {
+        ArchivosGrabacion archivos =
+                ArchivosGrabacion.inicializar(carpetaTemporal);
+        Grabador grabador = new Grabador(
+                carpetaTemporal, () -> 10_000_000L);
+        grabador.iniciar();
+        Path temporal = grabador.archivoSesionTemporal();
+        byte[] musicaAntes = Files.readAllBytes(
+                archivos.archivoMusica());
+        byte[] listaAntes = Files.readAllBytes(
+                archivos.archivoLista());
+        byte[] indiceAntes = Files.readAllBytes(
+                archivos.archivoIndice());
+
+        BusComandos bus = new BusComandos();
+        bus.registrarObservador(grabador);
+        bus.publicar(new ComandoPruebaFallido(), 11_000_000L);
+
+        FinalizadorGrabacion finalizador =
+                new FinalizadorGrabacion(
+                        grabador, archivos, () -> 1234L);
+        assertThrows(IllegalStateException.class,
+                () -> finalizador.finalizar("sesion-incompleta"));
+
+        assertFalse(Files.exists(temporal));
+        assertArrayEquals(musicaAntes,
+                Files.readAllBytes(archivos.archivoMusica()));
+        assertArrayEquals(listaAntes,
+                Files.readAllBytes(archivos.archivoLista()));
+        assertArrayEquals(indiceAntes,
+                Files.readAllBytes(archivos.archivoIndice()));
+    }
+
+    @Test
+    void restauraElIndiceSiElReemplazoFallaDespuesDeModificarlo()
+            throws IOException {
+        ArchivosGrabacion archivos =
+                ArchivosGrabacion.inicializar(carpetaTemporal);
+        Grabador grabador = new Grabador(
+                carpetaTemporal, () -> 10_000_000L);
+        grabador.iniciar();
+        grabador.comandoEnviado(
+                new ComandoPrueba(TipoAccion.PUNTUAL,
+                        new double[] {60.0}),
+                11_000_000L);
+
+        byte[] musicaAntes = Files.readAllBytes(
+                archivos.archivoMusica());
+        byte[] listaAntes = Files.readAllBytes(
+                archivos.archivoLista());
+        byte[] indiceAntes = Files.readAllBytes(
+                archivos.archivoIndice());
+        Path temporal = grabador.archivoSesionTemporal();
+
+        FinalizadorGrabacion finalizador =
+                new FinalizadorGrabacion(
+                        grabador, archivos, () -> 1234L,
+                        (indice, resultado, cantidadEsperada) -> {
+                            Files.write(indice, new byte[] {1, 2, 3});
+                            throw new IOException(
+                                    "fallo simulado durante el reemplazo");
+                        });
+
+        assertThrows(IOException.class,
+                () -> finalizador.finalizar("sesion"));
+
+        assertFalse(Files.exists(temporal));
+        assertArrayEquals(musicaAntes,
+                Files.readAllBytes(archivos.archivoMusica()));
+        assertArrayEquals(listaAntes,
+                Files.readAllBytes(archivos.archivoLista()));
+        assertArrayEquals(indiceAntes,
+                Files.readAllBytes(archivos.archivoIndice()));
+    }
+
+    @Test
     void limpiezaNoEliminaDirectoriosNiArchivosPersistentes()
             throws IOException {
         ArchivosGrabacion archivos =
@@ -247,6 +325,28 @@ class FinalizadorGrabacionTest {
         @Override
         public double[] parametros() {
             return parametros.clone();
+        }
+    }
+
+    private static final class ComandoPruebaFallido implements Comando {
+
+        @Override
+        public void ejecutar() {
+        }
+
+        @Override
+        public Sintetizador destino() {
+            throw new IllegalStateException("destino no disponible");
+        }
+
+        @Override
+        public TipoAccion tipoAccion() {
+            return TipoAccion.PUNTUAL;
+        }
+
+        @Override
+        public double[] parametros() {
+            return new double[] {60.0};
         }
     }
 

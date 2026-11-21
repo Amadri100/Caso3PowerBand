@@ -31,9 +31,16 @@ import powerband.util.Constantes;
 
 public final class FinalizadorGrabacion {
 
+    @FunctionalInterface
+    interface ReemplazoIndice {
+        void reemplazar(Path indice, Path resultado,
+                long cantidadEsperada) throws IOException;
+    }
+
     private final Grabador grabador;
     private final ArchivosGrabacion archivos;
     private final LongSupplier relojFecha;
+    private final ReemplazoIndice reemplazoIndice;
 
     public FinalizadorGrabacion(Grabador grabador,
             ArchivosGrabacion archivos) {
@@ -42,12 +49,23 @@ public final class FinalizadorGrabacion {
 
     public FinalizadorGrabacion(Grabador grabador,
             ArchivosGrabacion archivos, LongSupplier relojFecha) {
+        this(grabador, archivos, relojFecha,
+                (indice, resultado, cantidadEsperada) ->
+                        new ReemplazadorIndice(indice, resultado)
+                                .reemplazar(cantidadEsperada));
+    }
+
+   protected FinalizadorGrabacion(Grabador grabador,
+            ArchivosGrabacion archivos, LongSupplier relojFecha,
+            ReemplazoIndice reemplazoIndice) {
         this.grabador = Objects.requireNonNull(
                 grabador, "grabador");
         this.archivos = Objects.requireNonNull(
                 archivos, "archivos");
         this.relojFecha = Objects.requireNonNull(
                 relojFecha, "relojFecha");
+        this.reemplazoIndice = Objects.requireNonNull(
+                reemplazoIndice, "reemplazoIndice");
     }
 
     public void finalizar(String nombre) throws IOException {
@@ -192,7 +210,7 @@ public final class FinalizadorGrabacion {
         Path indiceBackup = null;
         boolean musicaReemplazada = false;
         boolean listaReemplazada = false;
-        boolean indiceReemplazado = false;
+        boolean indiceReemplazoIntentado = false;
         boolean conservarMusicaBackup = false;
         boolean conservarListaBackup = false;
         boolean conservarIndiceBackup = false;
@@ -217,14 +235,14 @@ public final class FinalizadorGrabacion {
                 cantidadIndice = original.cantidadRegistros();
             }
 
-            new ReemplazadorIndice(
-                    archivos.archivoIndice(), indiceOrdenado)
-                    .reemplazar(cantidadIndice + 1);
-            indiceReemplazado = true;
+             indiceReemplazoIntentado = true;
+            reemplazoIndice.reemplazar(
+                    archivos.archivoIndice(), indiceOrdenado,
+                    cantidadIndice + 1);
             limpieza.limpiarExitosamente();
         } catch (IOException | RuntimeException | Error fallo) {
             falloPrincipal = fallo;
-            if (indiceReemplazado) {
+            if (indiceReemplazoIntentado) {
                 conservarIndiceBackup = !restaurar(
                         indiceBackup, archivos.archivoIndice(), fallo);
             }

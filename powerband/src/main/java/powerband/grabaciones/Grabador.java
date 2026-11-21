@@ -28,6 +28,7 @@ public final class Grabador implements ObservadorComandos {
     private long tiempoBaseNanos;
     private Path archivoSesionTemporal;
     private ArchivoRegistros<ComandoGrabado> archivoTemporal;
+    private Exception falloGrabacion;
 
     public Grabador(Path directorioGrabaciones) {
         this(directorioGrabaciones, System::nanoTime);
@@ -66,6 +67,7 @@ public final class Grabador implements ObservadorComandos {
                 tiempoBaseNanos = relojMonotonico.getAsLong();
                 archivoTemporal = archivo;
                 archivoSesionTemporal = temporal;
+                falloGrabacion = null;
                 grabando = true;
             } catch (IOException excepcion) {
                 if (temporal != null) {
@@ -97,12 +99,30 @@ public final class Grabador implements ObservadorComandos {
             }
 
             grabando = false;
+            IOException falloCierre = null;
             try {
                 archivoTemporal.close();
             } catch (IOException excepcion) {
-                throw ArchivoException.errorES(
+                falloCierre = ArchivoException.errorES(
                         archivoSesionTemporal.toString(),
                         "cerrar la sesión de grabación", excepcion);
+            }
+            if (falloGrabacion != null) {
+                if (falloCierre != null) {
+                    falloGrabacion.addSuppressed(falloCierre);
+                }
+                if (falloGrabacion instanceof IOException excepcion) {
+                    throw excepcion;
+                }
+                if (falloGrabacion instanceof RuntimeException excepcion) {
+                    throw excepcion;
+                }
+                throw new IllegalStateException(
+                        "Error inesperado durante la grabación",
+                        falloGrabacion);
+            }
+            if (falloCierre != null) {
+                throw falloCierre;
             }
         }
     }
@@ -174,16 +194,24 @@ public final class Grabador implements ObservadorComandos {
                 ArchivoException fallo = ArchivoException.errorES(
                         archivoSesionTemporal.toString(),
                         "guardar un comando grabado", excepcion);
+                registrarFalloGrabacion(fallo);
                 LoggerPowerBand.getInstance().registrarErrorArchivo(
                         fallo.getMessage(),
                         archivoSesionTemporal.toString());
                 return false;
             } catch (RuntimeException excepcion) {
+                registrarFalloGrabacion(excepcion);
                 LoggerPowerBand.getInstance().registrarErrorArchivo(
                         excepcion.getMessage(),
                         archivoSesionTemporal.toString());
                 return false;
             }
+        }
+    }
+
+    private void registrarFalloGrabacion(Exception fallo) {
+        if (falloGrabacion == null) {
+            falloGrabacion = fallo;
         }
     }
 
