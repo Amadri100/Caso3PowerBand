@@ -26,7 +26,6 @@ import powerband.comandos.TipoAccion;
 import powerband.excepciones.ArchivoException;
 import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
-import powerband.sintetizadores.Sintetizador;
 import powerband.util.Constantes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
