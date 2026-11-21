@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import powerband.controlador.FachadaControlador;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,6 +29,9 @@ class PanelPrincipalTest {
             PanelPrincipal panel = new PanelPrincipal(fachada);
             assertSame(fachada, panel.fachada());
             assertEquals(Vista.INICIO, panel.vistaActual());
+            assertInstanceOf(
+                    PanelGrabacion.class,
+                    panel.panelVista(Vista.GRABACION));
         });
 
         assertEquals(1, llamadas.get());

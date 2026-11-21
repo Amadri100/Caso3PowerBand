@@ -43,23 +43,23 @@ public final class PanelPrincipal extends JPanel {
         mostrarVista(Vista.INICIO);
     }
 
-    FachadaControlador fachada() {
+    protected FachadaControlador fachada() {
         return controlador;
     }
 
-    Vista vistaActual() {
+    protected Vista vistaActual() {
         return vistaActual;
     }
 
-    JPanel panelVista(Vista vista) {
+    protected  JPanel panelVista(Vista vista) {
         return paneles.get(vista);
     }
 
-    JButton botonNavegacion(Vista vista) {
+    protected JButton botonNavegacion(Vista vista) {
         return botonesNavegacion.get(vista);
     }
 
-    int cantidadVistas() {
+    protected int cantidadVistas() {
         return paneles.size();
     }
 
@@ -70,6 +70,8 @@ public final class PanelPrincipal extends JPanel {
                 panel = crearInicio();
             } else if (vista == Vista.CONEXION) {
                 panel = new PanelConexion(controlador);
+            } else if (vista == Vista.GRABACION) {
+                panel = new PanelGrabacion(controlador);
             } else if (vista == Vista.CONFIGURACION) {
                 panel = new PanelConfiguracion(controlador);
             } else {
