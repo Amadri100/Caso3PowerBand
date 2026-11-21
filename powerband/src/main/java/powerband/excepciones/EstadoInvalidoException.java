@@ -25,6 +25,16 @@ public class EstadoInvalidoException extends IllegalStateException
                 TipoErrorEstado.TEMPORAL_AJENO);
     }
 
+    public static EstadoInvalidoException grabacionActiva() {
+        return new EstadoInvalidoException(
+                TipoErrorEstado.GRABACION_ACTIVA);
+    }
+
+    public static EstadoInvalidoException grabacionInactiva() {
+        return new EstadoInvalidoException(
+                TipoErrorEstado.GRABACION_INACTIVA);
+    }
+
     public final TipoErrorEstado tipo() {
         return tipo;
     }

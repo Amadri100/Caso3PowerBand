@@ -7,7 +7,11 @@ import static powerband.excepciones.ConstantesExcepciones.PREFIJO_ESTADO;
 
 public enum TipoErrorEstado implements CodigoError {
     TEMPORAL_AJENO(PREFIJO_ESTADO + "001",
-            ConstantesExcepciones.MSG_TEMPORAL_AJENO);
+            ConstantesExcepciones.MSG_TEMPORAL_AJENO),
+    GRABACION_ACTIVA(PREFIJO_ESTADO + "002",
+            ConstantesExcepciones.MSG_GRABACION_ACTIVA),
+    GRABACION_INACTIVA(PREFIJO_ESTADO + "003",
+            ConstantesExcepciones.MSG_GRABACION_INACTIVA);
 
     private final String codigo;
     private final String plantilla;

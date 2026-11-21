@@ -39,7 +39,12 @@ public final class BusComandos {
         List<RuntimeException> fallos = new ArrayList<>();
         for (ObservadorComandos observador : copiaObservadores) {
             try {
-                observador.comandoEnviado(comando, momentoNanos);
+                boolean procesado =
+                        observador.comandoEnviado(comando, momentoNanos);
+                if (!procesado) {
+                    fallos.add(new IllegalStateException(
+                            "El observador no pudo procesar el comando"));
+                }
             } catch (RuntimeException fallo) {
                 fallos.add(fallo);
             }

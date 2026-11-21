@@ -70,6 +70,14 @@ public final class ConstantesExcepciones {
 
     public static final String MSG_TEMPORAL_AJENO =
             "El resultado no pertenece a los temporales del ordenamiento";
+    public static final String MSG_GRABACION_ACTIVA =
+            "Ya existe una grabación activa";
+    public static final String MSG_GRABACION_INACTIVA =
+            "No existe una grabación activa";
+    public static final String MSG_COMANDO_NULO =
+            "El comando no puede ser nulo";
+    public static final String MSG_MOMENTO_ANTERIOR =
+            "El momento del comando es anterior al inicio de la grabación";
 
     private ConstantesExcepciones() {
     }

@@ -39,6 +39,7 @@ class BusComandosTest {
         ObservadorComandos observador = (recibido, momento) -> {
             comandosRecibidos.add(recibido);
             momentosRecibidos.add(momento);
+            return true;
         };
 
         bus.registrarObservador(observador);
@@ -59,7 +60,10 @@ class BusComandosTest {
         BusComandos bus = new BusComandos();
         int[] notificaciones = {0};
         ObservadorComandos observador =
-                (comando, momento) -> notificaciones[0]++;
+                (comando, momento) -> {
+                    notificaciones[0]++;
+                    return true;
+                };
 
         bus.registrarObservador(observador);
         bus.quitarObservador(observador);
@@ -76,7 +80,10 @@ class BusComandosTest {
         bus.registrarObservador((comando, momento) -> {
             throw new IllegalStateException("fallo de prueba");
         });
-        bus.registrarObservador((comando, momento) -> notificaciones[0]++);
+        bus.registrarObservador((comando, momento) -> {
+            notificaciones[0]++;
+            return true;
+        });
 
         bus.publicar(comandoDePrueba(), 20L);
 

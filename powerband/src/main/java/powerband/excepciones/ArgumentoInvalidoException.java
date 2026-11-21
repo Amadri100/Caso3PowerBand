@@ -131,6 +131,18 @@ public class ArgumentoInvalidoException extends IllegalArgumentException
                 TipoErrorArgumento.PARAMETROS_EXCESO, maximo, cantidad);
     }
 
+    public static ArgumentoInvalidoException comandoNulo() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.NOMBRE_INVALIDO,
+                ConstantesExcepciones.MSG_COMANDO_NULO);
+    }
+
+    public static ArgumentoInvalidoException momentoAnterior() {
+        return new ArgumentoInvalidoException(
+                TipoErrorArgumento.INTERVALO_INVALIDO,
+                ConstantesExcepciones.MSG_MOMENTO_ANTERIOR);
+    }
+
     public final TipoErrorArgumento tipo() {
         return tipo;
     }
