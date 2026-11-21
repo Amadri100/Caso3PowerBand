@@ -49,7 +49,7 @@ public final class Reproductor {
             }
         }
     }
-
+    //Detiene el hilos
     public boolean detener() {
         Thread hiloAInterrumpir;
         synchronized (bloqueoControl) {
@@ -64,10 +64,11 @@ public final class Reproductor {
         }
         return true;
     }
-
+    //Lee una grabacion abierta, 
     private void reproducirLectura(GrabacionAbierta lectura)
             throws IOException, InterruptedException {
         long inicioNanos = relojMonotonico.getAsLong();
+        //Crea una cola 
         Deque<ComandoGrabado> buffer = new ArrayDeque<>(
                 Constantes.CAPACIDAD_BUFFER_REPRODUCCION);
         List<Comando> notasActivas = new ArrayList<>();
@@ -79,6 +80,7 @@ public final class Reproductor {
                 if (detencionSolicitada) {
                     break;
                 }
+                //Agrega comandos al buffer si puede
                 while (!finLectura && !detencionSolicitada
                         && buffer.size()
                                 < Constantes.CAPACIDAD_BUFFER_REPRODUCCION) {
@@ -90,20 +92,23 @@ public final class Reproductor {
                         buffer.addLast(siguiente.orElseThrow());
                     }
                 }
-
+                //Toma elementos del buffer
                 while (!buffer.isEmpty()) {
                     if (detencionSolicitada) {
                         break;
                     }
                     ComandoGrabado grabado = buffer.removeFirst();
+                    //Espera el momento para ejecutar el comando
                     if (!esperarHasta(inicioNanos,
                             convertirTiempoANanos(
                                     grabado.tiempoRelativoMillis()))) {
                         break;
                     }
+                    //Si se pide detener para aqui
                     if (detencionSolicitada) {
                         break;
                     }
+                    //Reconstruye el comando
                     Comando comando = Objects.requireNonNull(
                             reconstruir.apply(grabado),
                             "La reconstrucción devolvió null");
@@ -111,6 +116,7 @@ public final class Reproductor {
                     if (detencionSolicitada) {
                         break;
                     }
+                    //Ejecuta el comando en el sinteitzador
                     comando.ejecutar();
                     actualizarNotasActivas(comando, notasActivas);
                 }
@@ -160,6 +166,7 @@ public final class Reproductor {
                 hiloEnEspera = hiloActual;
             }
             try {
+                //Hace que el programa espere, no utiliza sleep
                 espera.esperar(plazoNanos - transcurridoNanos);
             } catch (InterruptedException excepcion) {
                 if (detencionSolicitada) {
@@ -175,7 +182,7 @@ public final class Reproductor {
             }
         }
     }
-
+    //Asigna el thread
     private void iniciarControl() {
         synchronized (bloqueoControl) {
             if (hiloReproduccion != null) {
@@ -186,7 +193,7 @@ public final class Reproductor {
             hiloReproduccion = Thread.currentThread();
         }
     }
-
+    //Termina los hilos
     private void terminarControl() {
         synchronized (bloqueoControl) {
             if (hiloReproduccion == Thread.currentThread()
@@ -198,7 +205,7 @@ public final class Reproductor {
             detencionSolicitada = false;
         }
     }
-
+    
     private static void validarComandoSostenido(Comando comando) {
         if (comando.tipoAccion() == TipoAccion.INICIO
                 && comando.parametros().length == 0) {
@@ -206,10 +213,11 @@ public final class Reproductor {
                     "Un comando de inicio requiere identificar la nota");
         }
     }
-
+    //Actualiza la lista de notas activas
     private static void actualizarNotasActivas(Comando comando,
             List<Comando> notasActivas) {
         double[] parametros = comando.parametros();
+        //Si se esta iniciando se agrega el comando
         if (comando.tipoAccion() == TipoAccion.INICIO) {
             notasActivas.add(comando);
         } else if (comando.tipoAccion() == TipoAccion.FINALIZACION
@@ -219,6 +227,7 @@ public final class Reproductor {
                     indice >= 0; indice--) {
                 Comando inicio = notasActivas.get(indice);
                 double[] parametrosInicio = inicio.parametros();
+                //Si la nota finalizo se elimina
                 if (inicio.destino().id() == comando.destino().id()
                         && Double.doubleToLongBits(parametrosInicio[0])
                                 == notaFinalizada) {
