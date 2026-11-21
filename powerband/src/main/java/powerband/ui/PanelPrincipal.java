@@ -70,6 +70,8 @@ public final class PanelPrincipal extends JPanel {
                 panel = crearInicio();
             } else if (vista == Vista.CONEXION) {
                 panel = new PanelConexion(controlador);
+            } else if (vista == Vista.CONFIGURACION) {
+                panel = new PanelConfiguracion(controlador);
             } else {
                 panel = crearMarcador(vista);
             }

@@ -19,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PanelPrincipalTest {
 
     @Test
-    void conservaLaFachadaInyectadaSinInvocarla() throws Exception {
+    void conservaLaFachadaYConsultaLasOpcionesAlCrearElPanel()
+            throws Exception {
         AtomicInteger llamadas = new AtomicInteger();
         FachadaControlador fachada = fachadaContada(llamadas);
 
@@ -29,12 +30,13 @@ class PanelPrincipalTest {
             assertEquals(Vista.INICIO, panel.vistaActual());
         });
 
-        assertEquals(0, llamadas.get());
+        assertEquals(1, llamadas.get());
     }
 
     @Test
     void navegarMuestraUnaVistaYNoDuplicaLosPaneles() throws Exception {
-        FachadaControlador fachada = fachadaContada(new AtomicInteger());
+        AtomicInteger llamadas = new AtomicInteger();
+        FachadaControlador fachada = fachadaContada(llamadas);
 
         SwingUtilities.invokeAndWait(() -> {
             PanelPrincipal panel = new PanelPrincipal(fachada);
@@ -50,6 +52,7 @@ class PanelPrincipalTest {
                 assertEquals(cantidadPaneles, panel.cantidadVistas());
             }
         });
+        assertEquals(1, llamadas.get());
     }
 
     private static int cantidadPanelesVisibles(PanelPrincipal panel) {

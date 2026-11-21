@@ -39,8 +39,8 @@ Ajuste Excepciones:
 - [x] T-230 | `FachadaControlador` falsa (stub) con datos de ejemplo para desarrollar la UI sin la Parte A | status: done | deps: R-011
 - [x] T-231 | Ventana principal y navegación entre paneles | status: done | deps: T-230
 - [x] T-232 | Panel de conexión: iniciar y finalizar la conexión con dispositivos y sintetizadores | status: done | deps: T-231
-- [ ] T-234 | Panel de asignación de instrumento a sintetizador | status: todo | deps: T-231
-- [ ] T-235 | Panel de configuración con solo las opciones modificables de `Configuraciones` | status: todo | deps: T-231, R-005
+- [ ] T-234 | Panel de asignación múltiple de sintetizadores a instrumentos | status: todo | deps: T-231
+- [x] T-235 | Panel de configuración con solo las opciones modificables de `Configuraciones` | status: done | deps: T-231, R-005
 - [ ] T-236 | Panel de grabación: iniciar, detener, diálogo de nombre y aviso de nombre duplicado | status: todo | deps: T-231
 - [ ] T-237 | Panel de sesiones: lista cronológica, búsqueda por nombre y reproducción | status: todo | deps: T-231
 - [ ] T-238 | Barra de estado y errores desde `ObservadorEstado`, sin mostrar el envío UDP como confirmación | status: todo | deps: T-231

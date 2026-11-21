@@ -23,6 +23,7 @@ public final class ConstantesGUI {
     public static final int ANCHO_INICIAL_VENTANA = 1120;
     public static final int ALTO_INICIAL_VENTANA = 760;
     public static final int COLUMNAS_TARJETAS_INICIO = 2;
+    public static final int COLUMNAS_CAMPO_CONFIGURACION = 20;
 
     public static final int ESPACIADO_MENU = 4;
     public static final int ESPACIADO_MARCA_MENU = 28;
