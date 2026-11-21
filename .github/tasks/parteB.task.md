@@ -37,7 +37,7 @@ Ajuste Excepciones:
 ## Interfaz gráfica (contra la fachada de R-011)
 
 - [x] T-230 | `FachadaControlador` falsa (stub) con datos de ejemplo para desarrollar la UI sin la Parte A | status: done | deps: R-011
-- [ ] T-231 | Ventana principal y navegación entre paneles | status: todo | deps: T-230
+- [x] T-231 | Ventana principal y navegación entre paneles | status: done | deps: T-230
 - [ ] T-232 | Panel de conexión: iniciar y finalizar la conexión con dispositivos y sintetizadores | status: todo | deps: T-231
 - [ ] T-233 | Panel de asignación de dispositivo a instrumento | status: todo | deps: T-231
 - [ ] T-234 | Panel de asignación de instrumento a sintetizador | status: todo | deps: T-231
