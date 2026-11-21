@@ -21,19 +21,19 @@ updated: 2026-11-19
 
 ## Comandos
 
-- [ ] T-110 | Comando puntual (`ComandoPuntual`): conserva destino y parámetros; `ejecutar()` delega al sintetizador | status: todo | deps: R-009
-- [ ] T-111 | Comando de inicio sostenido, con datos para identificar la acción | status: todo | deps: T-110
-- [ ] T-112 | Comando de actualización sostenida | status: todo | deps: T-111
-- [ ] T-113 | Comando de finalización sostenida | status: todo | deps: T-111
-- [ ] T-114 | Implementar `toString()` en los comandos y registrar cada comando enviado en la categoría `comando` | status: todo | deps: T-110, R-006
+- [x] T-110 | Comando puntual (`ComandoPuntual`): conserva destino y parámetros; `ejecutar()` delega al sintetizador | status: done | deps: R-009
+- [x] T-111 | Comando de inicio sostenido, con datos para identificar la acción | status: done | deps: T-110
+- [x] T-112 | Comando de actualización sostenida | status: done | deps: T-111
+- [x] T-113 | Comando de finalización sostenida | status: done | deps: T-111
+- [x] T-114 | Implementar `toString()` en los comandos y registrar cada comando enviado en la categoría `comando` | status: done | deps: T-110, R-006
 
 ## Instrumentos (Bridge)
 
-- [ ] T-115 | Clase abstracta `Instrumento`: referencia configurable a `Sintetizador` (puede ser nula), reemplazo en ejecución y envío de acciones | status: todo | deps: R-008, R-010
-- [ ] T-116 | `Instrumento`: soporte para varios sintetizadores destino y publicación de cada comando en `BusComandos` | status: todo | deps: T-115, T-114
-- [ ] T-117 | Instrumento concreto `Microfono`: convierte datos del micrófono en comandos | status: todo | deps: T-116
-- [ ] T-118 | Instrumento concreto `Control`: convierte eventos del control en comandos | status: todo | deps: T-116
-- [ ] T-119 | Instrumento concreto `Tableta`: convierte posición y presión en comandos | status: todo | deps: T-116
+- [x] T-115 | Clase abstracta `Instrumento`: referencia configurable a `Sintetizador` (puede ser nula), reemplazo en ejecución y envío de acciones | status: done | deps: R-008, R-010
+- [x] T-116 | `Instrumento`: soporte para varios sintetizadores destino y publicación de cada comando en `BusComandos` | status: done | deps: T-115, T-114
+- [x] T-117 | Instrumento concreto `Microfono`: convierte datos del micrófono en comandos | status: done | deps: T-116
+- [x] T-118 | Instrumento concreto `Control`: convierte eventos del control en comandos | status: done | deps: T-116
+- [x] T-119 | Instrumento concreto `Tableta`: convierte posición y presión en comandos | status: done | deps: T-116
 
 ## Entradas
 
