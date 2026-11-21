@@ -65,9 +65,14 @@ public final class PanelPrincipal extends JPanel {
 
     private void registrarPaneles() {
         for (Vista vista : Vista.values()) {
-            JPanel panel = vista == Vista.INICIO
-                    ? crearInicio()
-                    : crearMarcador(vista);
+            JPanel panel;
+            if (vista == Vista.INICIO) {
+                panel = crearInicio();
+            } else if (vista == Vista.CONEXION) {
+                panel = new PanelConexion(controlador);
+            } else {
+                panel = crearMarcador(vista);
+            }
             paneles.put(vista, panel);
             contenido.add(panel, vista.name());
         }
