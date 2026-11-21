@@ -72,6 +72,8 @@ public final class PanelPrincipal extends JPanel {
                 panel = new PanelConexion(controlador);
             } else if (vista == Vista.GRABACION) {
                 panel = new PanelGrabacion(controlador);
+            } else if (vista == Vista.SESIONES) {
+                panel = new PanelSesiones(controlador);
             } else if (vista == Vista.CONFIGURACION) {
                 panel = new PanelConfiguracion(controlador);
             } else {
