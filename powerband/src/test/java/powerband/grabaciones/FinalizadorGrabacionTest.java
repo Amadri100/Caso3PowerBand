@@ -10,7 +10,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import powerband.archivos.ArchivoRegistros;
 import powerband.archivos.BuscadorIndice;
-import powerband.archivos.ComandoGrabado;
 import powerband.archivos.EncabezadoGrabacion;
 import powerband.archivos.EntradaIndice;
 import powerband.archivos.EntradaListaGrabacion;
@@ -210,23 +209,6 @@ class FinalizadorGrabacionTest {
         assertEquals(1, fallo.getSuppressed().length);
     }
 
-    private static ArchivoRegistros<EncabezadoGrabacion>
-            crearEncabezados(Path ruta) {
-        return new ArchivoRegistros<>(
-                ruta,
-                Constantes.TAMANO_ENCABEZADO_GRABACION,
-                EncabezadoGrabacion::desdeBytes,
-                EncabezadoGrabacion::serializar);
-    }
-
-    private static ArchivoRegistros<ComandoGrabado>
-            crearComandos(Path ruta) {
-        return new ArchivoRegistros<>(
-                ruta,
-                Constantes.TAMANO_COMANDO_GRABADO,
-                ComandoGrabado::desdeBytes,
-                ComandoGrabado::serializar);
-    }
 
     private static ArchivoRegistros<EntradaIndice>
             crearIndices(Path ruta) {
