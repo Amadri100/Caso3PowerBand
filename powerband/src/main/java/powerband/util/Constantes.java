@@ -34,6 +34,7 @@ public final class Constantes {
     public static final int TAMANO_CANTIDAD_PARAMETROS = 1;
     public static final int MAXIMO_PARAMETROS_COMANDO = 8;
     public static final int TAMANO_PARAMETRO_COMANDO = Double.BYTES;
+    public static final int CAPACIDAD_BUFFER_REPRODUCCION = 32;
 
     public static final int TAMANO_ENCABEZADO_GRABACION =
             LONGITUD_MAXIMA_NOMBRE + TAMANO_POSICION_BYTES
