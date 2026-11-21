@@ -1,4 +1,4 @@
-package powerband.archivos;
+package powerband.grabaciones;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

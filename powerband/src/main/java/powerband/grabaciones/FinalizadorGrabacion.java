@@ -1,4 +1,4 @@
-package powerband.archivos;
+package powerband.grabaciones;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,6 +13,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 
+import powerband.archivos.ArchivoRegistros;
+import powerband.archivos.BuscadorIndice;
+import powerband.archivos.ComandoGrabado;
+import powerband.archivos.EncabezadoGrabacion;
+import powerband.archivos.EntradaIndice;
+import powerband.archivos.EntradaListaGrabacion;
+import powerband.archivos.ListaGrabaciones;
+import powerband.archivos.OrdenadorIndice;
+import powerband.archivos.ReemplazadorIndice;
+import powerband.archivos.ValidacionesGenerales;
 import powerband.excepciones.ArchivoException;
 import powerband.excepciones.ArchivoIncompletoException;
 import powerband.excepciones.NombreDuplicadoException;

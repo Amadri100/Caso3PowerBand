@@ -1,4 +1,4 @@
-package powerband.archivos;
+package powerband.grabaciones;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +8,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import powerband.archivos.ArchivoRegistros;
+import powerband.archivos.BuscadorIndice;
+import powerband.archivos.ComandoGrabado;
+import powerband.archivos.EncabezadoGrabacion;
+import powerband.archivos.EntradaIndice;
+import powerband.archivos.EntradaListaGrabacion;
+import powerband.archivos.ListaGrabaciones;
 import powerband.comandos.Comando;
 import powerband.comandos.TipoAccion;
 import powerband.excepciones.ArgumentoInvalidoException;
@@ -17,11 +24,11 @@ import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
 import powerband.util.Constantes;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class FinalizadorGrabacionTest {
 

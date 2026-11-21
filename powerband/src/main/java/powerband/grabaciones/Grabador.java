@@ -1,4 +1,4 @@
-package powerband.archivos;
+package powerband.grabaciones;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
+import powerband.archivos.ArchivoRegistros;
+import powerband.archivos.ComandoGrabado;
 import powerband.comandos.Comando;
 import powerband.comandos.ObservadorComandos;
 import powerband.excepciones.ArchivoException;

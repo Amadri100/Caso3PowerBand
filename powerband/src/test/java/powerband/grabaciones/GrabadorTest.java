@@ -1,4 +1,4 @@
-package powerband.archivos;
+package powerband.grabaciones;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import powerband.archivos.ArchivoRegistros;
+import powerband.archivos.ComandoGrabado;
 import powerband.comandos.Comando;
 import powerband.comandos.TipoAccion;
 import powerband.excepciones.EstadoInvalidoException;

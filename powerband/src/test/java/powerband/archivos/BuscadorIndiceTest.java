@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import powerband.grabaciones.ArchivosGrabacion;
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
 
