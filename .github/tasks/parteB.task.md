@@ -44,5 +44,5 @@ Ajuste Excepciones:
 - [x] T-237 | Panel de sesiones: lista cronológica, búsqueda por nombre y reproducción | status: done | deps: T-231
 - [x] T-238 | Barra de estado y errores desde `ObservadorEstado`, sin mostrar el envío UDP como confirmación | status: done | deps: T-231
 - [x] T-241 | Panel único de instrumentos, dispositivos y sintetizadores | status: done | deps: T-238
-- [ ] T-239 | Cierre de la ventana delegado al controlador (detener entradas, reproducción y notas sostenidas) | status: todo | deps: T-231
-- [ ] T-240 | Revisión de la UI: sin lectura de dispositivos, sin OSC ni `BandClient`, sin algoritmos de archivos | status: todo | deps: T-239
+- [x] T-239 | Cierre de la ventana delegado al controlador (detener entradas, reproducción y notas sostenidas) | status: done | deps: T-231
+- [x] T-240 | Revisión de la UI: sin lectura de dispositivos, sin OSC ni `BandClient`, sin algoritmos de archivos | status: done | deps: T-239
