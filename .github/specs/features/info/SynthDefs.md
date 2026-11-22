@@ -52,8 +52,14 @@ espera la sincronización antes de publicar el mensaje de carga.
    myband: classicPiano, stringBass, organ70s loaded
    ```
 
-5. Para una comprobación sonora manual opcional, evaluar `~myband.test;`. Esto
-   reproduce una demostración y no forma parte de las pruebas unitarias.
+5. Para la prueba manual desde Java, ejecutar
+   `powerband.sintetizadores.BandClient` con el host y puerto del servidor
+   (opcionales; por defecto se usan `127.0.0.1` y `57117`). La demostración
+   reproduce piano y bajo, inicia tres notas de órgano, finaliza dos mediante
+   `noteOff` y finaliza la nota restante mediante `allNotesOff()`. Comprobar
+   que se escucha cada síntesis y que las notas sostenidas dejan de sonar.
+6. También se puede evaluar `~myband.test;` para una comprobación sonora
+   independiente de Java.
 
 El orden importa: cambiar el servidor predeterminado después de ejecutar
 `~myband.load` no mueve definiciones ni mensajes al nuevo servidor. Si el puerto
@@ -78,7 +84,7 @@ destino antes de cargar las definiciones.
 - Comprobar que el puerto de escucha de `scsynth` coincide con el puerto
   configurado en `Configuraciones`.
 - Ejecutar la demostración opcional y comprobar piano, bajo, inicio de órgano y
-  cierre de notas.
+  cierre de notas individual con `noteOff` y global con `allNotesOff`.
 
 La prueba sonora es manual y requiere SuperCollider y una salida de audio. No
 se ejecuta desde `mvn test` ni implica que UDP confirme la recepción de cada

@@ -245,8 +245,9 @@ public class BandClient implements AutoCloseable {
             band.noteOn(67, new float[] { 1f, 3f, 5f }, new float[] { 1f, 0.4f, 0.2f });    Thread.sleep(2000);
             band.noteOff(60);
             band.noteOff(64);
-            band.noteOff(67);
-            Thread.sleep(1000); // let the release tail finish
+            System.out.println("-- organ 70s: allNotesOff");
+            band.allNotesOff();
+            Thread.sleep(1000);
 
             System.out.println("Done.");
         }

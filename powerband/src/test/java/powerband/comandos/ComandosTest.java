@@ -1,6 +1,7 @@
 package powerband.comandos;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import powerband.sintetizadores.Sintetizador;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ComandosTest {
 
@@ -60,8 +62,31 @@ class ComandosTest {
         finalizacion.ejecutar();
         assertEquals(TipoAccion.FINALIZACION, sintetizador.tipoAccion);
         assertEquals("nota-1", inicio.identificador());
+        assertArrayEquals(new double[] {60.0}, sintetizador.parametros);
+        assertTrue(inicio.toString().contains("identificadorAccion=nota-1"));
         assertThrows(IllegalArgumentException.class,
                 () -> new ComandoInicio(sintetizador, " ", 60.0));
+    }
+
+    @Test
+    void comandosPuntualesYSostenidosUsanElSintetizadorFalsoYSeRegistran()
+            throws Exception {
+        SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
+
+        new ComandoPuntual(sintetizador, 48.0, 0.75).ejecutar();
+        new ComandoInicio(sintetizador, "nota-2", 60.0).ejecutar();
+        new ComandoActualizacion(sintetizador, "nota-2", 62.0).ejecutar();
+        new ComandoFinalizacion(sintetizador, "nota-2", 62.0).ejecutar();
+
+        String log = Files.readString(
+                carpetaTemporal.resolve("powerband.log"));
+        assertEquals(4, log.lines()
+                .filter(linea -> linea.contains("[comando]"))
+                .count());
+        assertTrue(log.contains("ComandoPuntual"));
+        assertTrue(log.contains("ComandoInicio"));
+        assertTrue(log.contains("ComandoActualizacion"));
+        assertTrue(log.contains("ComandoFinalizacion"));
     }
 
     private static final class SintetizadorDePrueba implements Sintetizador {

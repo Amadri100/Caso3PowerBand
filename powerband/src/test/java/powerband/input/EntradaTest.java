@@ -1,6 +1,9 @@
 package powerband.input;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -36,19 +39,26 @@ class EntradaTest {
     }
 
     @Test
-    void iniciaYDetieneCadaEntradaIndependientemente() throws InterruptedException {
-        EntradaDePrueba primera = new EntradaDePrueba("primera");
-        EntradaDePrueba segunda = new EntradaDePrueba("segunda");
+    void iniciaYDetieneCadaEntradaIndependientemente() throws Exception {
+        EntradaDePrueba primera = new EntradaDePrueba("primera", null);
+        EntradaDePrueba segunda = new EntradaDePrueba("segunda", null);
 
         primera.iniciar();
         segunda.iniciar();
-        primera.detener();
+        try {
+            assertTrue(primera.esperarInicio());
+            assertTrue(segunda.esperarInicio());
+            primera.detener();
 
-        assertFalse(primera.estaActiva());
-        assertTrue(segunda.estaActiva());
-
-        segunda.detener();
+            assertFalse(primera.estaActiva());
+            assertTrue(segunda.estaActiva());
+            assertEquals(1, primera.recursosLiberados.get());
+        } finally {
+            primera.detener();
+            segunda.detener();
+        }
         assertFalse(segunda.estaActiva());
+        assertEquals(1, segunda.recursosLiberados.get());
     }
 
     @Test
@@ -60,21 +70,44 @@ class EntradaTest {
     }
 
     @Test
-    void desconexionActivaSoloLaEntradaAfectada() {
+    void desconexionActivaSoloLaEntradaAfectada() throws Exception {
         AtomicInteger notificaciones = new AtomicInteger();
         EntradaDePrueba afectada = new EntradaDePrueba(
-                "afectada", notificaciones);
-        EntradaDePrueba operativa = new EntradaDePrueba("operativa");
+                "afectada", notificaciones, null);
+        EntradaDePrueba operativa = new EntradaDePrueba("operativa", null);
 
         afectada.iniciar();
         operativa.iniciar();
-        afectada.desconectar("simulada");
+        try {
+            assertTrue(afectada.esperarInicio());
+            assertTrue(operativa.esperarInicio());
+            afectada.desconectar("simulada");
 
-        assertFalse(afectada.estaActiva());
-        assertTrue(operativa.estaActiva());
-        assertEquals(1, notificaciones.get());
+            assertFalse(afectada.estaActiva());
+            assertTrue(operativa.estaActiva());
+            assertEquals(1, notificaciones.get());
+            assertEquals(1, afectada.recursosLiberados.get());
+            assertTrue(Files.readString(
+                    carpetaTemporal.resolve("powerband.log"))
+                    .contains("Desconexion de entrada afectada: simulada"));
+        } finally {
+            afectada.detener();
+            operativa.detener();
+        }
+    }
 
-        operativa.detener();
+    @Test
+    void entradaMicrofonoRechazaYRegistraFrecuenciaFueraDeRango()
+            throws Exception {
+        EntradaMicrofono microfono = new EntradaMicrofono();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> microfono.procesarFrecuencia(10.0, 0.5));
+
+        String log = Files.readString(
+                carpetaTemporal.resolve("powerband.log"));
+        assertTrue(log.contains("[error]"));
+        assertTrue(log.contains("frecuencia=10.0"));
     }
 
     @Test
@@ -91,13 +124,32 @@ class EntradaTest {
 
     private static final class EntradaDePrueba extends Entrada {
 
+        private final CountDownLatch inicio;
+        private final AtomicInteger recursosLiberados = new AtomicInteger();
+
         EntradaDePrueba(String nombre) {
             super(nombre);
+            inicio = new CountDownLatch(0);
         }
 
         EntradaDePrueba(String nombre,
-                        AtomicInteger notificaciones) {
+                        AtomicInteger notificaciones,
+                        CountDownLatch inicio) {
             super(nombre, entrada -> notificaciones.incrementAndGet());
+            this.inicio = inicio == null
+                    ? new CountDownLatch(1)
+                    : inicio;
+        }
+
+        EntradaDePrueba(String nombre, CountDownLatch inicio) {
+            super(nombre);
+            this.inicio = inicio == null
+                    ? new CountDownLatch(1)
+                    : inicio;
+        }
+
+        boolean esperarInicio() throws InterruptedException {
+            return inicio.await(1, TimeUnit.SECONDS);
         }
 
         void validarPublico(double valor, double minimo, double maximo) {
@@ -106,9 +158,15 @@ class EntradaTest {
 
         @Override
         protected void ejecutarCaptura() throws Exception {
+            inicio.countDown();
             while (estaActiva()) {
-                Thread.sleep(5);
+                Thread.sleep(50);
             }
+        }
+
+        @Override
+        protected void liberarRecursosEspecificos() {
+            recursosLiberados.incrementAndGet();
         }
     }
 }

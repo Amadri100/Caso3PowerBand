@@ -63,6 +63,27 @@ class InstrumentoTest {
     }
 
     @Test
+    void dosInstrumentosPublicanAlMismoSintetizador() {
+        SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
+        BusComandos bus = new BusComandos();
+        List<Sintetizador> destinosPublicados = new ArrayList<>();
+        bus.registrarObservador((comando, momento) ->
+                destinosPublicados.add(comando.destino()));
+        InstrumentoDePrueba primero =
+                new InstrumentoDePrueba(sintetizador, bus);
+        InstrumentoDePrueba segundo =
+                new InstrumentoDePrueba(sintetizador, bus);
+
+        primero.enviarAccion(TipoAccion.PUNTUAL, 60.0);
+        segundo.enviarAccion(TipoAccion.INICIO, 64.0);
+
+        assertEquals(List.of(sintetizador, sintetizador),
+                destinosPublicados);
+        assertEquals(2, sintetizador.ejecuciones);
+        assertEquals(TipoAccion.INICIO, sintetizador.tipoAccion);
+    }
+
+    @Test
     void instrumentosConcretosConviertenSusDatos() {
         SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
         Microfono microfono = new Microfono(sintetizador);
@@ -97,6 +118,7 @@ class InstrumentoTest {
 
         private TipoAccion tipoAccion;
         private double[] parametros;
+        private int ejecuciones;
 
         @Override
         public IdSintetizador id() {
@@ -107,6 +129,7 @@ class InstrumentoTest {
         public void ejecutar(TipoAccion tipoAccion, double... parametros) {
             this.tipoAccion = tipoAccion;
             this.parametros = parametros.clone();
+            ejecuciones++;
         }
 
         @Override
