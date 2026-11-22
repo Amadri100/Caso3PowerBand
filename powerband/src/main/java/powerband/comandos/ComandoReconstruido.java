@@ -8,7 +8,7 @@ public final class ComandoReconstruido implements Comando {
         private final TipoAccion tipoAccion;
         private final double[] parametros;
         //Evitando uso fuera del paquete        
-        protected ComandoReconstruido(Sintetizador destino,
+        public ComandoReconstruido(Sintetizador destino,
                 TipoAccion tipoAccion, double[] parametros) {
             this.destino = destino;
             this.tipoAccion = tipoAccion;

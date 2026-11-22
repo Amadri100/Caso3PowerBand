@@ -21,7 +21,7 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     private final List<ObservadorEstado> observadores = new ArrayList<>();
     private final Map<String, String> asignacionesDispositivo =
             new LinkedHashMap<>();
-    private final Map<String, IdSintetizador> asignacionesSintetizador =
+    private final Map<String, List<IdSintetizador>> asignacionesSintetizador =
             new LinkedHashMap<>();
     private final Map<String, Object> opciones = new LinkedHashMap<>();
     private final List<String> sesiones = new ArrayList<>(List.of(
@@ -83,7 +83,72 @@ public final class FachadaControladorFalsa implements FachadaControlador {
             notificarError(error.getMessage(), error);
             return false;
         }
-        asignacionesSintetizador.put(instrumentoId, sintetizadorId);
+        asignacionesSintetizador.put(
+                instrumentoId, List.of(sintetizadorId));
+        return true;
+    }
+
+    @Override
+    public List<String> listarInstrumentos() {
+        return List.copyOf(INSTRUMENTOS_EJEMPLO);
+    }
+
+    @Override
+    public List<IdSintetizador> listarSintetizadores() {
+        return List.of(
+                IdSintetizador.PIANO,
+                IdSintetizador.BAJO,
+                IdSintetizador.ORGANO);
+    }
+
+    @Override
+    public Map<String, String> dispositivoPorInstrumento() {
+        return Collections.unmodifiableMap(
+                new LinkedHashMap<>(asignacionesDispositivo));
+    }
+
+    @Override
+    public Map<String, List<IdSintetizador>>
+            sintetizadoresPorInstrumento() {
+        Map<String, List<IdSintetizador>> copia =
+                new LinkedHashMap<>();
+        for (Map.Entry<String, List<IdSintetizador>> asignacion
+                : asignacionesSintetizador.entrySet()) {
+            copia.put(asignacion.getKey(),
+                    List.copyOf(asignacion.getValue()));
+        }
+        return Collections.unmodifiableMap(copia);
+    }
+
+    @Override
+    public boolean reemplazarSintetizadores(
+            String instrumentoId,
+            List<IdSintetizador> sintetizadorIds) {
+        Objects.requireNonNull(
+                sintetizadorIds, "sintetizadorIds");
+        if (!INSTRUMENTOS_EJEMPLO.contains(instrumentoId)) {
+            notificarError(
+                    "El instrumento de ejemplo no existe",
+                    new IllegalArgumentException(
+                            "El instrumento de ejemplo no existe"));
+            return false;
+        }
+        for (IdSintetizador sintetizadorId : sintetizadorIds) {
+            if (sintetizadorId == null
+                    || !List.of(
+                            IdSintetizador.PIANO,
+                            IdSintetizador.BAJO,
+                            IdSintetizador.ORGANO)
+                            .contains(sintetizadorId)) {
+                notificarError(
+                        "El sintetizador de ejemplo no es válido",
+                        new IllegalArgumentException(
+                                "El sintetizador de ejemplo no es válido"));
+                return false;
+            }
+        }
+        asignacionesSintetizador.put(
+                instrumentoId, List.copyOf(sintetizadorIds));
         return true;
     }
 

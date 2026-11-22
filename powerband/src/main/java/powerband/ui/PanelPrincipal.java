@@ -85,6 +85,8 @@ public final class PanelPrincipal extends JPanel {
                 panel = new PanelGrabacion(controlador);
             } else if (vista == Vista.SESIONES) {
                 panel = new PanelSesiones(controlador);
+                } else if (vista == Vista.INSTRUMENTOS) {
+                    panel = new PanelInstrumentos(controlador);
             } else if (vista == Vista.CONFIGURACION) {
                 panel = new PanelConfiguracion(controlador);
             } else {
@@ -185,8 +187,7 @@ public final class PanelPrincipal extends JPanel {
         tarjetas.setBackground(ConstantesGUI.COLOR_FONDO);
         List<Vista> areasPrincipales = List.of(
                 Vista.CONEXION,
-                Vista.DISPOSITIVOS_INSTRUMENTOS,
-                Vista.SINTETIZADORES,
+                Vista.INSTRUMENTOS,
                 Vista.GRABACION,
                 Vista.SESIONES);
         for (Vista vista : areasPrincipales) {

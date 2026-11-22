@@ -159,6 +159,35 @@ class FachadaControladorFalsaTest {
     }
 
     @Test
+    void exponeInstrumentosYSintetizadoresEnAsignacionesMultiples() {
+        FachadaControladorFalsa fachada =
+                new FachadaControladorFalsa();
+
+        assertEquals(List.of("piano", "bajo", "organo"),
+                fachada.listarInstrumentos());
+        assertEquals(List.of(
+                IdSintetizador.PIANO,
+                IdSintetizador.BAJO,
+                IdSintetizador.ORGANO),
+                fachada.listarSintetizadores());
+        assertTrue(fachada.reemplazarSintetizadores(
+                "piano",
+                List.of(IdSintetizador.PIANO,
+                        IdSintetizador.BAJO)));
+        assertEquals(
+                List.of(IdSintetizador.PIANO,
+                        IdSintetizador.BAJO),
+                fachada.sintetizadoresPorInstrumento().get("piano"));
+        assertFalse(fachada.reemplazarSintetizadores(
+                "instrumento-inexistente",
+                List.of(IdSintetizador.PIANO)));
+        assertTrue(fachada.reemplazarSintetizadores(
+                "piano", List.of()));
+        assertEquals(List.of(),
+                fachada.sintetizadoresPorInstrumento().get("piano"));
+    }
+
+    @Test
     void falloDeObservadorNoImpideNotificarALosDemas()
             throws IOException {
         FachadaControladorFalsa fachada =

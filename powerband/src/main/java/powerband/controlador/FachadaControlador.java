@@ -19,6 +19,18 @@ public interface FachadaControlador {
             String instrumentoId,
             IdSintetizador sintetizadorId);
 
+    List<String> listarInstrumentos();
+
+    List<IdSintetizador> listarSintetizadores();
+
+    Map<String, String> dispositivoPorInstrumento();
+
+    Map<String, List<IdSintetizador>> sintetizadoresPorInstrumento();
+
+    boolean reemplazarSintetizadores(
+            String instrumentoId,
+            List<IdSintetizador> sintetizadorIds);
+
     Map<String, Object> opcionesConfigurables();
 
     Object consultarOpcion(String clave);
