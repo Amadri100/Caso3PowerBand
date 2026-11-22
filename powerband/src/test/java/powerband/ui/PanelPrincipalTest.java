@@ -47,7 +47,7 @@ public class PanelPrincipalTest {
         esperarDisponible(
                 ((PanelSesiones) panelReferencia.get()
                         .panelVista(Vista.SESIONES)).botonActualizar());
-        assertEquals(2, llamadas.get());
+        assertEquals(3, llamadas.get());
     }
 
     @Test

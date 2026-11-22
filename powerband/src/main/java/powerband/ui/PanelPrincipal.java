@@ -29,6 +29,7 @@ public final class PanelPrincipal extends JPanel {
     private final Map<Vista, JButton> botonesNavegacion =
             new EnumMap<>(Vista.class);
     private final JLabel tituloVista = new JLabel();
+    private final BarraEstado barraEstado;
     private Vista vistaActual = Vista.INICIO;
 
     public PanelPrincipal(FachadaControlador controlador) {
@@ -38,8 +39,10 @@ public final class PanelPrincipal extends JPanel {
         setBackground(ConstantesGUI.COLOR_FONDO);
 
         registrarPaneles();
+        barraEstado = new BarraEstado(controlador);
         add(crearNavegacion(), BorderLayout.WEST);
         add(crearAreaContenido(), BorderLayout.CENTER);
+        add(barraEstado, BorderLayout.SOUTH);
         mostrarVista(Vista.INICIO);
     }
 
@@ -61,6 +64,14 @@ public final class PanelPrincipal extends JPanel {
 
     protected int cantidadVistas() {
         return paneles.size();
+    }
+
+    public final void limpiarEstado() {
+        barraEstado.limpiar();
+    }
+
+    protected BarraEstado barraEstado() {
+        return barraEstado;
     }
 
     private void registrarPaneles() {

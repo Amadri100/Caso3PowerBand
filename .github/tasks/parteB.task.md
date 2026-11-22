@@ -43,6 +43,6 @@ Ajuste Excepciones:
 - [x] T-235 | Panel de configuración con solo las opciones modificables de `Configuraciones` | status: done | deps: T-231, R-005
 - [x] T-236 | Panel de grabación: iniciar, detener, diálogo de nombre y aviso de nombre duplicado | status: done | deps: T-231
 - [x] T-237 | Panel de sesiones: lista cronológica, búsqueda por nombre y reproducción | status: done | deps: T-231
-- [ ] T-238 | Barra de estado y errores desde `ObservadorEstado`, sin mostrar el envío UDP como confirmación | status: todo | deps: T-231
+- [x] T-238 | Barra de estado y errores desde `ObservadorEstado`, sin mostrar el envío UDP como confirmación | status: done | deps: T-231
 - [ ] T-239 | Cierre de la ventana delegado al controlador (detener entradas, reproducción y notas sostenidas) | status: todo | deps: T-231
 - [ ] T-240 | Revisión de la UI: sin lectura de dispositivos, sin OSC ni `BandClient`, sin algoritmos de archivos | status: todo | deps: T-239

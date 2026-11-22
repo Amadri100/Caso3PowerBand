@@ -44,4 +44,10 @@ public final class VentanaPrincipal extends JFrame {
         this.accionCierre = Objects.requireNonNull(
                 accionCierre, "accionCierre");
     }
+
+    public final void limpiarObservadorEstado() {
+        PanelPrincipal panel =
+                (PanelPrincipal) getContentPane();
+        panel.limpiarEstado();
+    }
 }

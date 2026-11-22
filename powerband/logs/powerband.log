@@ -2,3 +2,7 @@
 2026-11-21T23:16:58.125347900Z [error] Fallo en una operación del panel de grabación: java.lang.IllegalStateException: No se puede iniciar la grabación en el estado actual
 2026-11-21T23:17:01.829623900Z [error] No hay una grabación de ejemplo activa: java.lang.IllegalStateException: No hay una grabación de ejemplo activa
 2026-11-21T23:17:01.869648800Z [error] Fallo en una operación del panel de grabación: java.lang.IllegalStateException: No hay una grabación de ejemplo activa
+2026-11-22T04:37:05.371683400Z [error] No se puede reproducir una sesión en el estado actual: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual
+2026-11-22T04:37:05.395033300Z [error] Fallo en una operación del panel de sesiones: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual
+2026-11-22T04:37:09.466867Z [error] No se puede reproducir una sesión en el estado actual: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual
+2026-11-22T04:37:09.513107800Z [error] Fallo en una operación del panel de sesiones: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual

@@ -47,6 +47,7 @@ public final class ConstantesGUI {
     public static final int MARGEN_TARJETA_HORIZONTAL = 16;
     public static final int MARGEN_MARCADOR_VERTICAL = 28;
     public static final int MARGEN_MARCADOR_HORIZONTAL = 30;
+    public static final int MARGEN_INTERIOR_BARRA_ESTADO = 8;
 
     public static final float TAMANO_FUENTE_MARCA = 22f;
     public static final float TAMANO_FUENTE_MENU = 11f;
