@@ -49,15 +49,16 @@ public abstract class Instrumento {
                 : this.sintetizadores.get(0);
     }
 
-    public Sintetizador sintetizador() {
+    public synchronized Sintetizador sintetizador() {
         return sintetizador;
     }
 
-    public Sintetizador obtenerSintetizador() {
+    public synchronized Sintetizador obtenerSintetizador() {
         return sintetizador;
     }
 
-    public Sintetizador reemplazarSintetizador(Sintetizador nuevoSintetizador) {
+    public synchronized Sintetizador reemplazarSintetizador(
+            Sintetizador nuevoSintetizador) {
         Sintetizador anterior = sintetizador;
         sintetizador = nuevoSintetizador;
         if (nuevoSintetizador != null) {
@@ -81,7 +82,8 @@ public abstract class Instrumento {
         reemplazarSintetizador(nuevoSintetizador);
     }
 
-    public void agregarSintetizador(Sintetizador nuevoSintetizador) {
+    public synchronized void agregarSintetizador(
+            Sintetizador nuevoSintetizador) {
         Objects.requireNonNull(nuevoSintetizador, "nuevoSintetizador");
         boolean existe = sintetizadores.stream()
                 .anyMatch(destino -> destino == nuevoSintetizador);
@@ -93,7 +95,8 @@ public abstract class Instrumento {
         }
     }
 
-    public void retirarSintetizador(Sintetizador sintetizadorRetirar) {
+    public synchronized void retirarSintetizador(
+            Sintetizador sintetizadorRetirar) {
         Objects.requireNonNull(sintetizadorRetirar, "sintetizadorRetirar");
         sintetizadores.removeIf(destino -> destino == sintetizadorRetirar);
         if (sintetizador == sintetizadorRetirar) {
@@ -103,7 +106,7 @@ public abstract class Instrumento {
         }
     }
 
-    public void reemplazarSintetizadores(
+    public synchronized void reemplazarSintetizadores(
             List<? extends Sintetizador> nuevosSintetizadores) {
         Objects.requireNonNull(nuevosSintetizadores, "nuevosSintetizadores");
         sintetizadores.clear();
@@ -119,7 +122,7 @@ public abstract class Instrumento {
                 : sintetizadores.get(0);
     }
 
-    public List<Sintetizador> sintetizadores() {
+    public synchronized List<Sintetizador> sintetizadores() {
         return List.copyOf(sintetizadores);
     }
 
@@ -128,11 +131,12 @@ public abstract class Instrumento {
     }
 
     public void enviarAccion(TipoAccion tipoAccion, double... parametros) {
-        if (sintetizadores.isEmpty()) {
+        List<Sintetizador> destinos = sintetizadores();
+        if (destinos.isEmpty()) {
             throw new IllegalStateException(
                     "El instrumento no tiene un sintetizador asignado");
         }
-        for (Sintetizador destino : List.copyOf(sintetizadores)) {
+        for (Sintetizador destino : destinos) {
             Comando comando;
             comando = new ComandoReconstruido(
                     destino, tipoAccion, parametros);

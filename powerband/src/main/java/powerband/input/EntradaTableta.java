@@ -146,7 +146,15 @@ public class EntradaTableta extends Entrada {
                 float presion = ((Number) pen.getClass()
                         .getMethod("getLevelValue", claseTipo)
                         .invoke(pen, tipoPresion)).floatValue();
-                procesarPosicion(x, y, presion);
+                try {
+                    procesarPosicion(x, y, presion);
+                } catch (RuntimeException excepcion) {
+                    if (estaActiva()) {
+                        desconectar(excepcion.getMessage(), excepcion);
+                    } else {
+                        throw excepcion;
+                    }
+                }
             }
             return null;
         }

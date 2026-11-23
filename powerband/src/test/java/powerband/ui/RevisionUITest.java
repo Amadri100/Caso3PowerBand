@@ -24,6 +24,8 @@ public class RevisionUITest {
 
     private static final List<String> PAQUETES_PROHIBIDOS = List.of(
             "powerband.archivos.",
+            "powerband.controlador.Controlador",
+            "powerband.controlador.FachadaControladorFalsa",
             "powerband.grabaciones.",
             "powerband.input.",
             "powerband.sintetizadores.BandClient",

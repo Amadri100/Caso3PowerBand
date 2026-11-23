@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import powerband.comandos.TipoAccion;
+import powerband.excepciones.FalloTransporteException;
 import powerband.logging.LoggerPowerBand;
 import powerband.util.Constantes;
 
@@ -79,7 +80,7 @@ abstract class AdaptadorBandClient implements Sintetizador {
         try {
             operacion.ejecutar();
         } catch (IOException fallo) {
-            IllegalStateException error = new IllegalStateException(
+            FalloTransporteException error = new FalloTransporteException(
                     "Fallo local al " + descripcion, fallo);
             registrarError(error);
             throw error;

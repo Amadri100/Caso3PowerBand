@@ -98,6 +98,11 @@ public class EntradaControl extends Entrada {
         nombreDispositivo = nombre;
     }
 
+    public void limpiarDispositivoSeleccionado() {
+        nombreDispositivo = null;
+        dispositivo = null;
+    }
+
     public void procesarEvento(double eje, double valor) {
         validarValor("eje", eje,
                 Constantes.VALOR_MUSICAL_MINIMO,

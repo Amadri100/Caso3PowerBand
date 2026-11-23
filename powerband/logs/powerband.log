@@ -6,3 +6,6 @@
 2026-11-22T04:37:05.395033300Z [error] Fallo en una operación del panel de sesiones: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual
 2026-11-22T04:37:09.466867Z [error] No se puede reproducir una sesión en el estado actual: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual
 2026-11-22T04:37:09.513107800Z [error] Fallo en una operación del panel de sesiones: java.lang.IllegalStateException: No se puede reproducir una sesión en el estado actual
+2026-11-23T06:48:36.560174200Z [info] Archivo de grabacion creado: C:\Users\andre\OneDrive\Desktop\Codigos\Caso3\Caso3PowerBand\powerband\recordings\recordings.music
+2026-11-23T06:48:36.564682400Z [info] Archivo de grabacion creado: C:\Users\andre\OneDrive\Desktop\Codigos\Caso3\Caso3PowerBand\powerband\recordings\recordings.list
+2026-11-23T06:48:36.566187200Z [info] Archivo de grabacion creado: C:\Users\andre\OneDrive\Desktop\Codigos\Caso3\Caso3PowerBand\powerband\recordings\recordings.index

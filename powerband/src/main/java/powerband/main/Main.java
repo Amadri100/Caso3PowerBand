@@ -2,8 +2,8 @@ package powerband.main;
 
 import javax.swing.SwingUtilities;
 
+import powerband.controlador.Controlador;
 import powerband.controlador.FachadaControlador;
-import powerband.controlador.FachadaControladorFalsa;
 import powerband.ui.VentanaPrincipal;
 
 public class Main {
@@ -11,12 +11,12 @@ public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             VentanaPrincipal ventana =
-                    new VentanaPrincipal(crearFachadaDeDesarrollo());
+                    new VentanaPrincipal(crearFachada());
             ventana.setVisible(true);
         });
     }
 
-    private static FachadaControlador crearFachadaDeDesarrollo() {
-        return new FachadaControladorFalsa();
+    static FachadaControlador crearFachada() {
+        return Controlador.getInstance();
     }
 }

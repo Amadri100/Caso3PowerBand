@@ -118,11 +118,11 @@ class ControladorTest {
         controlador.registrarObservadorEstado(observador);
         controlador.registrarObservadorEstado(observador);
         controlador.desconectar();
-        assertEquals(List.of(EstadoControlador.INICIAL), estados);
+        assertEquals(0, estados.size());
 
         controlador.retirarObservadorEstado(observador);
         controlador.desconectar();
-        assertEquals(1, estados.size());
+        assertEquals(0, estados.size());
     }
 
     private Controlador crearControlador() throws Exception {

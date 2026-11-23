@@ -193,18 +193,22 @@ Contrato que usa la UI.
 - `+ void retirarObservadorEstado(ObservadorEstado observador)`
 
 #### `Controlador` (final, Singleton, implementa FachadaControlador)
-Implementacion real. Instrumentos validos: "microfono", "control", "tableta". Crea `BandClient` y los 3 sintetizadores al conectar; la reproduccion corre en un hilo daemon; notifica estados y errores a observadores; si una entrada se desconecta, libera todo y vuelve a INICIAL.
+Implementacion real. Instrumentos validos: "microfono", "control", "tableta". Crea `BandClient` y los 3 sintetizadores al conectar; revierte fallos locales de apertura o activacion; la reproduccion corre en un hilo daemon; notifica estados y errores a observadores; una desconexion individual informa el fallo y no debe detener las demas entradas, mientras que un fallo global vuelve a INICIAL. Al desconectar, detiene las entradas, aborta y limpia grabaciones incompletas, espera el hilo de reproduccion, libera notas y cierra el cliente.
 - `+ static Controlador getInstance()`
 - `+ static Controlador obtenerInstancia()`
 - `+ EstadoControlador estadoActual()`
 - Implementa todos los metodos de `FachadaControlador`.
+  - Las asignaciones validan instrumentos y dispositivos detectados, evitan asignar un dispositivo a dos instrumentos y actualizan la entrada de control en ejecucion.
+  - Las asignaciones de sintetizadores se reflejan en los instrumentos, aceptan conjuntos multiples y se conservan para resolver los destinos del reproductor.
+  - El grabador se registra en `BusComandos` solo durante una grabacion; el reproductor usa la misma tabla de sintetizadores del controlador.
   - `iniciarGrabacion()` lanza `IllegalStateException` si no esta CONECTADO o ya graba/reproduce.
   - `detenerGrabacion(nombre)` finaliza y guarda la grabacion (lanza si no hay grabacion activa o el nombre es duplicado/invalido).
   - `buscarSesiones(nombre)` devuelve las sesiones cuyo nombre contiene el texto (sin distinguir mayusculas).
   - `reproducirSesion(nombre)` devuelve false si el estado no es valido o la sesion no existe.
+  - Los fallos locales de transporte se identifican con `FalloTransporteException`; UDP no confirma la disponibilidad o ejecucion remota de `scsynth`.
 
 #### `FachadaControladorFalsa` (final, implementa FachadaControlador)
-Implementacion de desarrollo con datos de ejemplo en memoria (dispositivos "audio-demo", "gamepad-demo", "lapiz-demo"; instrumentos "piano", "bajo", "organo"; sesiones "Demo Piano", "Demo Organo"). Sin hardware ni archivos. Es la que usa `Main`.
+Implementacion de desarrollo con datos de ejemplo en memoria (dispositivos "audio-demo", "gamepad-demo", "lapiz-demo"; instrumentos "piano", "bajo", "organo"; sesiones "Demo Piano", "Demo Organo"). Sin hardware ni archivos. No es la fachada usada por el arranque normal de `Main`.
 - `+ FachadaControladorFalsa()` (constructor por defecto)
 - Implementa todos los metodos de `FachadaControlador`.
 
@@ -217,6 +221,10 @@ Excepciones con codigo de error y mensaje formateado (`CODIGO mensaje [ruta]`).
 - `+ String codigo()`
 - `+ String plantilla()`
 - `+ String formatear(Object... argumentos)`
+
+#### `FalloTransporteException` (final, extends IllegalStateException)
+Identifica un error local de transporte y conserva la causa original. No confirma un fallo remoto.
+- `+ FalloTransporteException(String mensaje, Throwable causa)`
 
 #### `ConstantesExcepciones` (final)
 Prefijos (`ARC-`, `ORD-`, `ARG-`, `EST-`) y plantillas de mensajes (constantes `MSG_*`). Solo constantes publicas.
@@ -344,9 +352,10 @@ Base de una entrada con hilo daemon y notificacion de desconexion.
 - `# Entrada(String nombre)` / `# Entrada(String nombre, Consumer<Entrada> callbackDesconexion)` / `# Entrada(String nombre, Runnable callbackRunnable)`
 - `+ String nombre()`
 - `+ void iniciar()` / `+ void detener()` / `+ boolean estaActiva()` (alias: `activa()`, `estaIniciada()`, `iniciarHilo()`, `detenerHilo()`)
+- `detener()` interrumpe y espera el hilo de captura antes de completar la liberacion local.
 - `+ void cambiarCallbackDesconexion(Consumer<Entrada>)` / `+ void registrarCallbackDesconexion(Consumer<Entrada>)` / `+ void registrarCallbackDesconexion(Runnable)`
 - `+ void registrarObservadorDesconexion(ObservadorDesconexion observador)`
-- `+ void desconectar(String motivo)` (alias: `notificarDesconexion(String)`)
+- `+ void desconectar(String motivo)` / `+ void desconectar(String motivo, Throwable causa)` (alias: `notificarDesconexion(String)`)
 - `+ void rechazarValor(String descripcion, double valor, double minimo, double maximo)` (registra y lanza excepcion)
 - `+ void liberarRecursos()`
 - `+ void close()`
@@ -355,7 +364,7 @@ Base de una entrada con hilo daemon y notificacion de desconexion.
 - `# void liberarRecursosEspecificos()`
 
 #### `ObservadorDesconexion` (interface funcional)
-- `+ void entradaDesconectada(Entrada entrada, String motivo)`
+- `+ void entradaDesconectada(Entrada entrada, String motivo, Throwable causa)`
 
 #### `EntradaMicrofono` (extends Entrada)
 Captura el microfono (TarsosDSP, FFT_YIN) y convierte tono a nota via `Microfono`. Rangos: frecuencia 20 a 20000 Hz, amplitud 0 a 1.
@@ -369,6 +378,7 @@ Captura un gamepad/control (JInput) y lo envia a `Control`. Excluye teclado y mo
 - `+ static List<String> detectarDispositivos()` (alias: `listarDispositivos()`, `detectarControladores()`)
 - `+ static boolean esDispositivoValido(String nombre)` / `+ static boolean esDispositivoValido(Controller controlador)` (alias: `excluirTecladoOMouse(String)`)
 - `+ void seleccionarDispositivo(String nombre)`
+- `+ void limpiarDispositivoSeleccionado()`
 - `+ void procesarEvento(double eje, double valor)` (valores en [0,1])
 - `# void ejecutarCaptura() throws Exception` / `# void liberarRecursosEspecificos()`
 
@@ -446,7 +456,7 @@ Registro centralizado en `powerband/logs/powerband.log` (formato: `instante [cat
 
 ### main
 #### `Main`
-Punto de entrada. Abre `VentanaPrincipal` con `FachadaControladorFalsa` (modo desarrollo).
+Punto de entrada. Abre `VentanaPrincipal` en el EDT y le inyecta la instancia singleton real `Controlador.getInstance()`.
 - `+ static void main(String[] args)`
 
 ---

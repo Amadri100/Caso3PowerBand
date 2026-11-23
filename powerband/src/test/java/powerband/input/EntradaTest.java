@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import powerband.logging.LoggerPowerBand;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +55,7 @@ class EntradaTest {
             assertFalse(primera.estaActiva());
             assertTrue(segunda.estaActiva());
             assertEquals(1, primera.recursosLiberados.get());
+            assertTrue(primera.esperarFinalizacion());
         } finally {
             primera.detener();
             segunda.detener();
@@ -97,6 +100,27 @@ class EntradaTest {
     }
 
     @Test
+    void conservaLaCausaOriginalAlPropagarUnaDesconexion()
+            throws Exception {
+        RuntimeException causaOriginal =
+                new IllegalStateException("fallo de captura");
+        AtomicReference<Throwable> causaNotificada =
+                new AtomicReference<>();
+        CountDownLatch notificacion = new CountDownLatch(1);
+        EntradaConFallo entrada = new EntradaConFallo(causaOriginal);
+        entrada.registrarObservadorDesconexion(
+                (origen, motivo, causa) -> {
+                    causaNotificada.set(causa);
+                    notificacion.countDown();
+                });
+
+        entrada.iniciar();
+
+        assertTrue(notificacion.await(1, TimeUnit.SECONDS));
+        assertSame(causaOriginal, causaNotificada.get());
+    }
+
+    @Test
     void entradaMicrofonoRechazaYRegistraFrecuenciaFueraDeRango()
             throws Exception {
         EntradaMicrofono microfono = new EntradaMicrofono();
@@ -125,6 +149,7 @@ class EntradaTest {
     private static final class EntradaDePrueba extends Entrada {
 
         private final CountDownLatch inicio;
+        private final CountDownLatch finalizacion = new CountDownLatch(1);
         private final AtomicInteger recursosLiberados = new AtomicInteger();
 
         EntradaDePrueba(String nombre) {
@@ -152,6 +177,10 @@ class EntradaTest {
             return inicio.await(1, TimeUnit.SECONDS);
         }
 
+        boolean esperarFinalizacion() throws InterruptedException {
+            return finalizacion.await(1, TimeUnit.SECONDS);
+        }
+
         void validarPublico(double valor, double minimo, double maximo) {
             validarValor("valor", valor, minimo, maximo);
         }
@@ -159,14 +188,33 @@ class EntradaTest {
         @Override
         protected void ejecutarCaptura() throws Exception {
             inicio.countDown();
-            while (estaActiva()) {
-                Thread.sleep(50);
+            try {
+                while (estaActiva()) {
+                    Thread.sleep(50);
+                }
+            } finally {
+                finalizacion.countDown();
             }
         }
 
         @Override
         protected void liberarRecursosEspecificos() {
             recursosLiberados.incrementAndGet();
+        }
+    }
+
+    private static final class EntradaConFallo extends Entrada {
+
+        private final RuntimeException fallo;
+
+        private EntradaConFallo(RuntimeException fallo) {
+            super("con-fallo");
+            this.fallo = fallo;
+        }
+
+        @Override
+        protected void ejecutarCaptura() {
+            throw fallo;
         }
     }
 }

@@ -3,11 +3,11 @@ id: general
 type: spec
 scope: general
 title: Arquitectura general del proyecto
-status: draft
-version: 0.2.0
+status: completed
+version: 1.0.0
 owner: Equipo PowerBand
 created: 2026-11-17
-updated: 2026-11-18
+updated: 2026-11-23
 depends_on: []
 ---
 
@@ -122,7 +122,8 @@ y remotos.
 - Punto de acceso global mediante una única instancia.
 - Coordina los servicios necesarios sin contener lógica exclusiva de UI.
 - Compone entradas, instrumentos, sintetizadores, archivos y registro.
-- Mantiene el estado inicial cuando falla la conexión o se detiene el servidor.
+- Mantiene el estado inicial ante errores locales observables de conexión o
+  transporte; UDP no detecta una detención remota silenciosa.
 
 ### ui
 
@@ -162,3 +163,13 @@ y remotos.
 
 - JPen obtiene la posición y la presión del lápiz.
 - La posición y presión se normalizan antes de convertirse en comandos.
+
+## Estado final de integración
+
+La aplicación compone entradas, instrumentos, comandos, adaptadores de
+sintetizador, grabación, búsqueda, reproducción y UI mediante el controlador y
+sus contratos. Las pruebas Maven son deterministas y no requieren hardware ni
+SuperCollider. La aceptación con dispositivos físicos y `scsynth` es una
+validación manual separada. El envío UDP solo acredita que no se detectó un
+error local; no confirma recepción, ejecución ni una desconexión remota
+silenciosa.

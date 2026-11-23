@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import powerband.comandos.TipoAccion;
+import powerband.excepciones.FalloTransporteException;
 import powerband.logging.LoggerPowerBand;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -130,6 +131,7 @@ class AdaptadoresSintetizadorTest {
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> piano.ejecutar(TipoAccion.PUNTUAL, 60, 500));
 
+        assertTrue(error instanceof FalloTransporteException);
         assertTrue(error.getCause() instanceof IOException);
         String contenido = Files.readString(
                 carpetaTemporal.resolve("powerband.log"));

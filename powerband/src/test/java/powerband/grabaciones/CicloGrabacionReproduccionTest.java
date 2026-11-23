@@ -20,6 +20,7 @@ import powerband.comandos.BusComandos;
 import powerband.comandos.Comando;
 import powerband.comandos.FabricaComandosGrabados;
 import powerband.comandos.TipoAccion;
+import powerband.instrumentos.Microfono;
 import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
@@ -120,6 +121,61 @@ class CicloGrabacionReproduccionTest {
         assertEquals(2, notificaciones.get());
         assertArrayEquals(musicaAntes,
                 Files.readAllBytes(archivos.archivoMusica()));
+    }
+
+    @Test
+    void integraInstrumentoConGrabacionBusquedaYReproduccion()
+            throws IOException, InterruptedException {
+        ArchivosGrabacion archivos =
+                ArchivosGrabacion.inicializar(
+                        carpetaTemporal.resolve("integracion"));
+        BusComandos bus = new BusComandos();
+        SintetizadorFalso sintetizador =
+                new SintetizadorFalso(IdSintetizador.PIANO);
+        Microfono microfono = new Microfono(sintetizador, bus);
+        Grabador grabador = new Grabador(archivos.directorio());
+        bus.registrarObservador(grabador);
+
+        grabador.iniciar();
+        microfono.convertirFrecuencia(440.0, 0.4);
+        microfono.convertirFrecuencia(880.0, 0.8);
+
+        assertEquals(List.of(TipoAccion.PUNTUAL, TipoAccion.PUNTUAL),
+                sintetizador.accionesEjecutadas);
+        assertArrayEquals(new double[] {69.0, 0.4},
+                sintetizador.parametrosPorEjecucion.get(0));
+        assertArrayEquals(new double[] {81.0, 0.8},
+                sintetizador.parametrosPorEjecucion.get(1));
+
+        new FinalizadorGrabacion(
+                grabador, archivos, () -> 1_700_000_000_000L)
+                .finalizar("SesionIntegrada");
+
+        CargadorGrabaciones cargador =
+                new CargadorGrabaciones(archivos);
+        assertEquals(List.of("SesionIntegrada"),
+                cargador.listar().stream()
+                        .map(EntradaListaGrabacion::nombre).toList());
+        assertTrue(new BuscadorIndice(archivos.archivoIndice())
+                .buscar("sEsIoNiNtEgRaDa").isPresent());
+
+        sintetizador.accionesEjecutadas.clear();
+        sintetizador.parametrosPorEjecucion.clear();
+        AtomicLong relojReproduccion = new AtomicLong();
+        Reproductor reproductor = new Reproductor(
+                new FabricaComandosGrabados(id -> sintetizador)::reconstruir,
+                relojReproduccion::get,
+                relojReproduccion::addAndGet);
+
+        reproductor.reproducir(
+                cargador.abrir("SESIONINTEGRADA").orElseThrow());
+
+        assertEquals(List.of(TipoAccion.PUNTUAL, TipoAccion.PUNTUAL),
+                sintetizador.accionesEjecutadas);
+        assertArrayEquals(new double[] {69.0, 0.4},
+                sintetizador.parametrosPorEjecucion.get(0));
+        assertArrayEquals(new double[] {81.0, 0.8},
+                sintetizador.parametrosPorEjecucion.get(1));
     }
 
     private static Comando comando(IdSintetizador idSintetizador,
