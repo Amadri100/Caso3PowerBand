@@ -12,6 +12,8 @@ public final class Constantes {
 
     public static final String RUTA_LOGS = "powerband/logs";
     public static final String RUTA_GRABACIONES = "powerband/recordings";
+    public static final String ARGUMENTO_DEMO_SINTETIZADORES =
+            "--demo-synths";
     public static final String NOMBRE_ARCHIVO_GRABACIONES_MUSICA =
             "recordings.music";
     public static final String NOMBRE_ARCHIVO_GRABACIONES_LISTA =

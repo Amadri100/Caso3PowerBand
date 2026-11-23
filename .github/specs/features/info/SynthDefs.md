@@ -58,6 +58,15 @@ espera la sincronización antes de publicar el mensaje de carga.
    reproduce piano y bajo, inicia tres notas de órgano, finaliza dos mediante
    `noteOff` y finaliza la nota restante mediante `allNotesOff()`. Comprobar
    que se escucha cada síntesis y que las notas sostenidas dejan de sonar.
+   También puede ejecutarse desde `powerband.main.Main` con el argumento
+   `--demo-synths`; los argumentos opcionales permiten indicar host y puerto:
+
+   ```text
+   java powerband.main.Main --demo-synths 127.0.0.1 57117
+   ```
+
+   La configuración de VS Code incluye el perfil
+   `PowerBand T-133 Demo Synths`, equivalente a esa ejecución.
 6. También se puede evaluar `~myband.test;` para una comprobación sonora
    independiente de Java.
 
