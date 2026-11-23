@@ -12,7 +12,6 @@ import java.util.function.BiFunction;
 
 import javax.swing.AbstractButton;
 import javax.swing.JList;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.Test;

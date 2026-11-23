@@ -19,7 +19,6 @@ import powerband.controlador.FachadaControlador;
 import powerband.sintetizadores.IdSintetizador;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -90,7 +89,9 @@ public class PanelInstrumentosTest {
         assertEquals(0, asignaciones.get());
     }
 
+    
     @Test
+    @SuppressWarnings("unchecked")
     public void reemplazaElDispositivoYElConjuntoDeSintetizadores()
             throws Exception {
         AtomicReference<String> instrumentoDispositivo =
@@ -173,6 +174,7 @@ public class PanelInstrumentosTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void permiteVaciarLaSeleccionDeSintetizadores()
             throws Exception {
         AtomicReference<List<IdSintetizador>> sintetizadoresAsignados =
