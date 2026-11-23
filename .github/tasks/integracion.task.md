@@ -6,7 +6,7 @@ updated: 2026-11-18
 ---
 
 
-- [ ] T-301 | `Controlador` con instancia única que implementa `FachadaControlador` y compone entradas, instrumentos, sintetizadores, configuración, logging y archivos | status: todo | deps: T-133, T-219
+- [x] T-301 | Núcleo `Controlador` singleton que implementa `FachadaControlador` y compone entradas, instrumentos, sintetizadores, configuración, logging y archivos para las tareas reales de integración | status: done | deps: T-133, T-219
 - [ ] T-302 | `main`: arranque y composición de los componentes | status: todo | deps: T-301
 - [ ] T-303 | Conexión y desconexión: activar instrumentos, abrir `BandClient` y volver al estado inicial si el servidor no inicia | status: todo | deps: T-301
 - [ ] T-304 | Asignaciones en ejecución: dispositivo a instrumento e instrumento a sintetizador | status: todo | deps: T-301

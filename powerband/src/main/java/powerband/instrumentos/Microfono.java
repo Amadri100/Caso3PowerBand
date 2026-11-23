@@ -3,7 +3,6 @@ package powerband.instrumentos;
 import powerband.comandos.BusComandos;
 import powerband.comandos.Comando;
 import powerband.comandos.ComandoPuntual;
-import powerband.comandos.TipoAccion;
 import powerband.sintetizadores.Sintetizador;
 import powerband.util.Constantes;
 
