@@ -23,6 +23,32 @@ public final class Constantes {
     public static final String CATEGORIA_INFO = "info";
     public static final String CATEGORIA_ERROR = "error";
 
+    public static final int NOTA_MIDI_MINIMA = 0;
+    public static final int NOTA_MIDI_MAXIMA = 127;
+    public static final int DURACION_MINIMA_MS = 1;
+    public static final int DURACION_MAXIMA_MS = Integer.MAX_VALUE;
+    public static final int TERCERA_MENOR_SEMITONOS = 3;
+    public static final int TERCERA_MAYOR_SEMITONOS = 4;
+    public static final int CANTIDAD_PARCIALES_ORGANO = 3;
+    public static final double RAZON_ORGANO_1 = 1.0;
+    public static final double RAZON_ORGANO_2 = 2.0;
+    public static final double RAZON_ORGANO_3 = 3.0;
+    public static final double AMPLITUD_ORGANO_1 = 1.0;
+    public static final double AMPLITUD_ORGANO_2 = 0.5;
+    public static final double AMPLITUD_ORGANO_3 = 0.25;
+    public static final double AMPLITUD_MINIMA = 0.0;
+    public static final double AMPLITUD_MAXIMA = 1.0;
+    public static final double FRECUENCIA_AFINACION_HZ = 440.0;
+    public static final int SEMITONOS_POR_OCTAVA = 12;
+    public static final double VALOR_MUSICAL_MINIMO = 0.0;
+    public static final double VALOR_MUSICAL_MAXIMO = 1.0;
+    public static final double FRECUENCIA_MINIMA_HZ = 20.0;
+    public static final double FRECUENCIA_MAXIMA_HZ = 20000.0;
+    public static final double PRESION_MINIMA = 0.0;
+    public static final double PRESION_MAXIMA = 1.0;
+    public static final int TAMANO_BUFFER_AUDIO = 1024;
+    public static final int SUPERPOSICION_AUDIO = 0;
+
     public static final int[] SINTETIZADORES_INDICES = {1,2,3}; //Piano, bajo, organo
 
     public static final int LONGITUD_MAXIMA_NOMBRE = 200;

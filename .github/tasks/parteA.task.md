@@ -2,22 +2,22 @@
 id: parteA
 type: tasks
 status: in-progress
-updated: 2026-11-18
+updated: 2026-11-19
 ---
 
 
 
 ## Sintetizadores y transporte
 
-- [ ] T-101 | Inventariar los métodos de `BandClient` (envío de `/s_new`, `/n_set`, cierre) y anotarlos como referencia | status: todo | deps: R-001
-- [ ] T-102 | Alinear `BandClient` con `Configuraciones` (host y puerto `57117`, sin valores propios) | status: todo | deps: R-005, T-101
-- [ ] T-103 | Verificar que los SynthDefs `classicPiano`, `stringBass` y `organ70s` están definidos y documentar cómo cargarlos en `scsynth` | status: todo | deps: R-001
-- [ ] T-104 | Adaptador `PianoSintetizador`: `playPiano` con nota MIDI, duración en ms y tercera (mayor por defecto) | status: todo | deps: R-008, T-102
-- [ ] T-105 | Adaptador `BajoSintetizador`: `playBass` con nota MIDI y duración en ms | status: todo | deps: R-008, T-102
-- [ ] T-106 | Adaptador `OrganoSintetizador`: `noteOn` (nota a frecuencia, razones 1, 2, 3 y amplitudes 1, 0.5, 0.25 por defecto) | status: todo | deps: R-008, T-102
-- [ ] T-107 | `OrganoSintetizador`: `noteOff` (`/n_set` con `gate = 0`) y `allNotesOff`, llevando el registro de notas activas | status: todo | deps: T-106
-- [ ] T-108 | Validar rangos de parámetros en los adaptadores; rechazar, notificar y registrar valores inválidos | status: todo | deps: T-104, T-105, T-106, R-006
-- [ ] T-109 | Capturar errores locales de envío UDP, notificarlos y registrarlos; sin presentar el envío como confirmación | status: todo | deps: T-102, R-006
+- [ ] T-101 | Inventariar los métodos de `BandClient` (envío de `/s_new`, `/n_set`, cierre) y anotarlos como referencia | status: done | deps: R-001
+- [ ] T-102 | Alinear `BandClient` con `Configuraciones` (host y puerto `57117`, sin valores propios) | status: done | deps: R-005, T-101
+- [ ] T-103 | Verificar que los SynthDefs `classicPiano`, `stringBass` y `organ70s` están definidos y documentar cómo cargarlos en `scsynth` | status: done | deps: R-001
+- [ ] T-104 | Adaptador `PianoSintetizador`: `playPiano` con nota MIDI, duración en ms y tercera (mayor por defecto) | status: done | deps: R-008, T-102
+- [ ] T-105 | Adaptador `BajoSintetizador`: `playBass` con nota MIDI y duración en ms | status: done | deps: R-008, T-102
+- [ ] T-106 | Adaptador `OrganoSintetizador`: `noteOn` (nota a frecuencia, razones 1, 2, 3 y amplitudes 1, 0.5, 0.25 por defecto) | status: done | deps: R-008, T-102
+- [ ] T-107 | `OrganoSintetizador`: `noteOff` (`/n_set` con `gate = 0`) y `allNotesOff`, llevando el registro de notas activas | status: done | deps: T-106
+- [ ] T-108 | Validar rangos de parámetros en los adaptadores; rechazar, notificar y registrar valores inválidos | status: done | deps: T-104, T-105, T-106, R-006
+- [ ] T-109 | Capturar errores locales de envío UDP, notificarlos y registrarlos; sin presentar el envío como confirmación | status: done | deps: T-102, R-006
 
 ## Comandos
 
