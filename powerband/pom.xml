@@ -40,7 +40,7 @@
             <classifier>natives-all</classifier>
         </dependency>
 
-        <!-- Posicion y presion del lapiz -->
+        <!-- Posición y presión del lápiz -->
         <dependency>
             <groupId>io.github.thobbs</groupId>
             <artifactId>jpen</artifactId>
@@ -59,21 +59,22 @@
 
     <build>
         <plugins>
-        <plugin>
-            <groupId>com.googlecode.mavennatives</groupId>
-            <artifactId>maven-nativedependencies-plugin</artifactId>
-            <version>0.0.7</version>
+            <!-- Extrae las bibliotecas nativas de JInput en target/natives -->
+            <plugin>
+                <groupId>com.googlecode.mavennatives</groupId>
+                <artifactId>maven-nativedependencies-plugin</artifactId>
+                <version>0.0.7</version>
+                <executions>
+                    <execution>
+                        <id>unpacknatives</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-            <executions>
-                <execution>
-                    <id>unpacknatives</id>
-                    <phase>generate-resources</phase>
-                    <goals>
-                        <goal>copy</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>        
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -82,6 +83,7 @@
                     <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
