@@ -1,48 +1,31 @@
 package powerband.controlador;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
-import powerband.archivos.EntradaListaGrabacion;
 import powerband.archivos.ValidacionesGenerales;
 import powerband.comandos.BusComandos;
-import powerband.comandos.FabricaComandosGrabados;
 import powerband.excepciones.FalloTransporteException;
 import powerband.grabaciones.ArchivosGrabacion;
 import powerband.grabaciones.CargadorGrabaciones;
 import powerband.grabaciones.FinalizadorGrabacion;
 import powerband.grabaciones.GrabacionAbierta;
 import powerband.grabaciones.Grabador;
-import powerband.grabaciones.LimpiezaGrabacion;
 import powerband.grabaciones.Reproductor;
 import powerband.input.Entrada;
 import powerband.input.EntradaControl;
 import powerband.input.EntradaMicrofono;
 import powerband.input.EntradaTableta;
-import powerband.input.ObservadorDesconexion;
 import powerband.instrumentos.Control;
-import powerband.instrumentos.Instrumento;
 import powerband.instrumentos.Microfono;
 import powerband.instrumentos.Tableta;
 import powerband.logging.LoggerPowerBand;
-import powerband.sintetizadores.BandClient;
-import powerband.sintetizadores.BajoSintetizador;
 import powerband.sintetizadores.IdSintetizador;
-import powerband.sintetizadores.OrganoSintetizador;
-import powerband.sintetizadores.PianoSintetizador;
 import powerband.sintetizadores.Sintetizador;
 import powerband.util.Configuraciones;
 
@@ -51,60 +34,15 @@ public final class Controlador implements FachadaControlador {
     private static final Controlador INSTANCIA =
             crearInstanciaProduccion();
 
-    private static final List<String> INSTRUMENTOS = List.of(
-            "microfono", "control", "tableta");
-
-    private final BusComandos busComandos;
-    private final Microfono microfono;
-    private final Control control;
-    private final Tableta tableta;
-    private final EntradaMicrofono entradaMicrofono;
-    private final EntradaControl entradaControl;
-    private final EntradaTableta entradaTableta;
-    private final Map<String, Instrumento> instrumentos;
-    private final Map<IdSintetizador, Sintetizador> sintetizadores;
-    private final Object bloqueoAsignaciones = new Object();
-    private final Map<String, String> asignacionesDispositivo =
-            new LinkedHashMap<>();
-    private final Map<String, List<IdSintetizador>> asignacionesSintetizador =
-            new LinkedHashMap<>();
+    private final ControladorDispositivos dispositivos;
+    private final ControladorGrabaciones grabaciones;
     private final List<ObservadorEstado> observadores = new ArrayList<>();
     private final Object bloqueoCicloVida = new Object();
-    private final Grabador grabador;
-    private final CargadorGrabaciones cargador;
-    private final FinalizadorGrabacion finalizador;
-    private final Reproductor reproductor;
-    private final ArchivosGrabacion archivos;
-    private final Supplier<List<String>> proveedorDispositivos;
-
     private EstadoControlador estado = EstadoControlador.INICIAL;
-    private BandClient bandClient;
-    private volatile Thread hiloReproduccion;
     private boolean conectando;
     private boolean grabando;
     private boolean reproduciendo;
     private volatile boolean desconectando;
-
-    private Controlador() throws IOException {
-        this(crearComponentesProduccion());
-    }
-
-    private Controlador(ComponentesProduccion componentes) {
-        this(componentes.busComandos,
-                componentes.microfono,
-                componentes.control,
-                componentes.tableta,
-                componentes.entradaMicrofono,
-                componentes.entradaControl,
-                componentes.entradaTableta,
-                componentes.sintetizadores,
-                componentes.grabador,
-                componentes.cargador,
-                componentes.finalizador,
-                componentes.reproductor,
-                componentes.archivos,
-                EntradaControl::listarDispositivos);
-    }
 
     protected Controlador(
             BusComandos busComandos,
@@ -152,31 +90,10 @@ public final class Controlador implements FachadaControlador {
             Reproductor reproductor,
             ArchivosGrabacion archivos,
             Supplier<List<String>> proveedorDispositivos) {
-        this.busComandos = Objects.requireNonNull(
-                busComandos, "busComandos");
-        this.microfono = Objects.requireNonNull(
-                microfono, "microfono");
-        this.control = Objects.requireNonNull(control, "control");
-        this.tableta = Objects.requireNonNull(tableta, "tableta");
-        this.entradaMicrofono = Objects.requireNonNull(
-                entradaMicrofono, "entradaMicrofono");
-        this.entradaControl = Objects.requireNonNull(
-                entradaControl, "entradaControl");
-        this.entradaTableta = Objects.requireNonNull(
-                entradaTableta, "entradaTableta");
-        // El resolutor del reproductor debe observar la misma tabla activa.
-        this.sintetizadores = Objects.requireNonNull(
-                sintetizadores, "sintetizadores");
-        this.grabador = Objects.requireNonNull(grabador, "grabador");
-        this.cargador = Objects.requireNonNull(cargador, "cargador");
-        this.finalizador = Objects.requireNonNull(
-                finalizador, "finalizador");
-        this.reproductor = Objects.requireNonNull(
-                reproductor, "reproductor");
-        this.archivos = Objects.requireNonNull(archivos, "archivos");
-        this.proveedorDispositivos = Objects.requireNonNull(
-                proveedorDispositivos, "proveedorDispositivos");
-
+        Objects.requireNonNull(busComandos, "busComandos");
+        Objects.requireNonNull(microfono, "microfono");
+        Objects.requireNonNull(control, "control");
+        Objects.requireNonNull(tableta, "tableta");
         if (microfono.busComandos() != busComandos
                 || control.busComandos() != busComandos
                 || tableta.busComandos() != busComandos) {
@@ -184,16 +101,12 @@ public final class Controlador implements FachadaControlador {
                     "Todos los instrumentos deben compartir el BusComandos");
         }
 
-        instrumentos = new LinkedHashMap<>();
-        instrumentos.put("microfono", microfono);
-        instrumentos.put("control", control);
-        instrumentos.put("tableta", tableta);
-
-        ObservadorDesconexion observador = (entrada, motivo, causa) ->
-                entradaDesconectada(entrada, motivo, causa);
-        entradaMicrofono.registrarObservadorDesconexion(observador);
-        entradaControl.registrarObservadorDesconexion(observador);
-        entradaTableta.registrarObservadorDesconexion(observador);
+        grabaciones = new ControladorGrabaciones(
+                busComandos, grabador, cargador, finalizador, reproductor, archivos);
+        dispositivos = new ControladorDispositivos(
+                microfono, control, tableta, entradaMicrofono, entradaControl,
+                entradaTableta, sintetizadores, proveedorDispositivos,
+                this::notificarError, this::entradaDesconectada);
     }
 
     public static Controlador getInstance() {
@@ -234,10 +147,7 @@ public final class Controlador implements FachadaControlador {
         cambiarEstado(EstadoControlador.CONECTANDO);
 
         try {
-            asegurarSintetizadores();
-            entradaMicrofono.iniciar();
-            entradaControl.iniciar();
-            entradaTableta.iniciar();
+            dispositivos.iniciar();
             synchronized (this) {
                 conectando = false;
                 estado = EstadoControlador.CONECTADO;
@@ -291,181 +201,47 @@ public final class Controlador implements FachadaControlador {
 
     @Override
     public List<String> listarDispositivos() {
-        return List.copyOf(Objects.requireNonNull(
-                proveedorDispositivos.get(),
-                "La detección devolvió una lista nula"));
+        return dispositivos.listarDispositivos();
     }
 
     @Override
     public boolean asignarDispositivo(
             String instrumentoId, String dispositivoId) {
-        if (!INSTRUMENTOS.contains(instrumentoId)
-                || dispositivoId == null
-                || dispositivoId.isBlank()
-                || !EntradaControl.esDispositivoValido(dispositivoId)) {
-            return notificarAsignacionInvalida(
-                    "Instrumento o dispositivo no válido");
-        }
-
-        List<String> dispositivos;
-        try {
-            dispositivos = listarDispositivos();
-        } catch (RuntimeException excepcion) {
-            notificarError(
-                    "No se pudieron detectar los dispositivos",
-                    excepcion);
-            return false;
-        }
-        if (!dispositivos.contains(dispositivoId)) {
-            return notificarAsignacionInvalida(
-                    "El dispositivo no está disponible");
-        }
-
-        boolean dispositivoEnUso;
-        RuntimeException falloAplicacion = null;
-        synchronized (bloqueoAsignaciones) {
-            dispositivoEnUso = asignacionesDispositivo.entrySet()
-                    .stream()
-                    .anyMatch(asignacion ->
-                            !asignacion.getKey().equals(instrumentoId)
-                                    && asignacion.getValue().equals(
-                                            dispositivoId));
-            if (!dispositivoEnUso) {
-                if ("control".equals(instrumentoId)) {
-                    String anterior =
-                            asignacionesDispositivo.get(instrumentoId);
-                    boolean reiniciar = entradaControl.estaActiva()
-                            && !dispositivoId.equals(anterior);
-                    try {
-                        entradaControl.seleccionarDispositivo(dispositivoId);
-                        if (reiniciar) {
-                            entradaControl.detener();
-                            entradaControl.iniciar();
-                        }
-                    } catch (RuntimeException excepcion) {
-                        if (anterior != null) {
-                            try {
-                                entradaControl.seleccionarDispositivo(anterior);
-                                if (reiniciar
-                                        && !entradaControl.estaActiva()) {
-                                    entradaControl.iniciar();
-                                }
-                            } catch (RuntimeException falloRestauracion) {
-                                excepcion.addSuppressed(falloRestauracion);
-                            }
-                        }
-                        falloAplicacion = excepcion;
-                    }
-                }
-                if (falloAplicacion == null) {
-                    asignacionesDispositivo.put(
-                            instrumentoId, dispositivoId);
-                }
-            }
-        }
-        if (dispositivoEnUso) {
-            return notificarAsignacionInvalida(
-                    "El dispositivo ya está asignado a otro instrumento");
-        }
-        if (falloAplicacion != null) {
-            notificarError(
-                    "No se pudo aplicar la asignación del dispositivo",
-                    falloAplicacion);
-            return false;
-        }
-        return true;
+        return dispositivos.asignarDispositivo(instrumentoId, dispositivoId);
     }
 
     @Override
     public boolean asignarSintetizador(
             String instrumentoId, IdSintetizador sintetizadorId) {
-        if (sintetizadorId == null) {
-            return notificarAsignacionInvalida(
-                    "El sintetizador no es válido");
-        }
-        return reemplazarSintetizadores(
-                instrumentoId, List.of(sintetizadorId));
+        return dispositivos.asignarSintetizador(instrumentoId, sintetizadorId);
     }
 
     @Override
     public List<String> listarInstrumentos() {
-        return INSTRUMENTOS;
+        return dispositivos.listarInstrumentos();
     }
 
     @Override
     public List<IdSintetizador> listarSintetizadores() {
-        return List.of(
-                IdSintetizador.PIANO,
-                IdSintetizador.BAJO,
-                IdSintetizador.ORGANO);
+        return dispositivos.listarSintetizadores();
     }
 
     @Override
     public Map<String, String> dispositivoPorInstrumento() {
-        synchronized (bloqueoAsignaciones) {
-            return Collections.unmodifiableMap(
-                    new LinkedHashMap<>(asignacionesDispositivo));
-        }
+        return dispositivos.dispositivoPorInstrumento();
     }
 
     @Override
     public Map<String, List<IdSintetizador>>
             sintetizadoresPorInstrumento() {
-        synchronized (bloqueoAsignaciones) {
-            Map<String, List<IdSintetizador>> copia =
-                    new LinkedHashMap<>();
-            for (Map.Entry<String, List<IdSintetizador>> asignacion
-                    : asignacionesSintetizador.entrySet()) {
-                copia.put(asignacion.getKey(),
-                        List.copyOf(asignacion.getValue()));
-            }
-            return Collections.unmodifiableMap(copia);
-        }
+        return dispositivos.sintetizadoresPorInstrumento();
     }
 
     @Override
     public boolean reemplazarSintetizadores(
             String instrumentoId,
             List<IdSintetizador> sintetizadorIds) {
-        Objects.requireNonNull(sintetizadorIds, "sintetizadorIds");
-        Instrumento instrumento = instrumentos.get(instrumentoId);
-        if (instrumento == null) {
-            return notificarAsignacionInvalida(
-                    "Instrumento no válido");
-        }
-
-        Set<IdSintetizador> idsUnicos = new LinkedHashSet<>(sintetizadorIds);
-        if (idsUnicos.stream().anyMatch(
-                sintetizadorId -> sintetizadorId == null
-                        || !listarSintetizadores().contains(sintetizadorId))) {
-            return notificarAsignacionInvalida(
-                    "Uno o más sintetizadores no son válidos");
-        }
-
-        String sintetizadorNoDisponible = null;
-        synchronized (bloqueoAsignaciones) {
-            List<Sintetizador> destinos = new ArrayList<>();
-            for (IdSintetizador id : idsUnicos) {
-                Sintetizador sintetizador = sintetizadores.get(id);
-                if (!sintetizadores.isEmpty() && sintetizador == null) {
-                    sintetizadorNoDisponible =
-                            "No está disponible el sintetizador " + id;
-                    break;
-                }
-                if (sintetizador != null) {
-                    destinos.add(sintetizador);
-                }
-            }
-            if (sintetizadorNoDisponible == null) {
-                instrumento.reemplazarSintetizadores(destinos);
-                asignacionesSintetizador.put(
-                        instrumentoId, List.copyOf(idsUnicos));
-            }
-        }
-        if (sintetizadorNoDisponible != null) {
-            return notificarAsignacionInvalida(sintetizadorNoDisponible);
-        }
-        return true;
+        return dispositivos.reemplazarSintetizadores(instrumentoId, sintetizadorIds);
     }
 
     @Override
@@ -507,8 +283,7 @@ public final class Controlador implements FachadaControlador {
             }
         }
         try {
-            grabador.iniciar();
-            busComandos.registrarObservador(grabador);
+            grabaciones.iniciar();
             synchronized (this) {
                 grabando = true;
             }
@@ -544,9 +319,8 @@ public final class Controlador implements FachadaControlador {
                         "No hay una grabación activa");
             }
         }
-        busComandos.quitarObservador(grabador);
         try {
-            finalizador.finalizar(nombre);
+            grabaciones.finalizar(nombre);
             synchronized (this) {
                 grabando = false;
             }
@@ -566,11 +340,7 @@ public final class Controlador implements FachadaControlador {
     @Override
     public List<String> listarSesiones() {
         try {
-            List<String> nombres = new ArrayList<>();
-            for (EntradaListaGrabacion entrada : cargador.listar()) {
-                nombres.add(entrada.nombre());
-            }
-            return List.copyOf(nombres);
+            return grabaciones.listarSesiones();
         } catch (IOException excepcion) {
             notificarError("No se pudieron listar las grabaciones", excepcion);
             throw new IllegalStateException(
@@ -580,15 +350,13 @@ public final class Controlador implements FachadaControlador {
 
     @Override
     public List<String> buscarSesiones(String nombre) {
-        ValidacionesGenerales.validarNombre(nombre);
-        String filtro = nombre.toLowerCase(Locale.ROOT);
-        List<String> coincidencias = new ArrayList<>();
-        for (String sesion : listarSesiones()) {
-            if (sesion.toLowerCase(Locale.ROOT).contains(filtro)) {
-                coincidencias.add(sesion);
-            }
+        try {
+            return grabaciones.buscarSesiones(nombre);
+        } catch (IOException excepcion) {
+            notificarError("No se pudieron listar las grabaciones", excepcion);
+            throw new IllegalStateException(
+                    "No se pudieron listar las grabaciones", excepcion);
         }
-        return List.copyOf(coincidencias);
     }
 
     @Override
@@ -619,7 +387,7 @@ public final class Controlador implements FachadaControlador {
             return false;
         }
         try {
-            Optional<GrabacionAbierta> grabacion = cargador.abrir(nombre);
+            Optional<GrabacionAbierta> grabacion = grabaciones.abrir(nombre);
             if (grabacion.isEmpty()) {
                 notificarError(
                         "La sesión no existe: " + nombre,
@@ -631,17 +399,12 @@ public final class Controlador implements FachadaControlador {
                 reproduciendo = true;
             }
             cambiarEstado(EstadoControlador.REPRODUCIENDO);
-            Thread hilo = new Thread(
-                    () -> reproducirEnSegundoPlano(grabacion.orElseThrow()),
-                    "reproduccion-" + nombre);
-            hilo.setDaemon(true);
-            hiloReproduccion = hilo;
-            hilo.start();
+            grabaciones.iniciarReproduccion(
+                    nombre, grabacion.orElseThrow(), this::reproduccionFinalizada);
             return true;
         } catch (IOException | RuntimeException excepcion) {
             synchronized (this) {
                 reproduciendo = false;
-                hiloReproduccion = null;
             }
             notificarError("No se pudo reproducir la sesión", excepcion);
             return false;
@@ -668,14 +431,11 @@ public final class Controlador implements FachadaControlador {
         }
     }
 
-    private void reproducirEnSegundoPlano(GrabacionAbierta grabacion) {
+    private void reproduccionFinalizada(Throwable excepcion) {
         boolean falloGlobal = false;
         try {
-            reproductor.reproducir(grabacion);
-        } catch (IOException | InterruptedException | RuntimeException
-                | Error excepcion) {
-            if (excepcion instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
+            if (excepcion == null) {
+                return;
             }
             if (esFalloTransporte(excepcion)) {
                 falloGlobal = true;
@@ -690,7 +450,7 @@ public final class Controlador implements FachadaControlador {
             boolean notificarEstado;
             synchronized (this) {
                 reproduciendo = false;
-                hiloReproduccion = null;
+                grabaciones.finalizarReproduccion();
                 notificarEstado = !desconectando && !falloGlobal;
                 if (notificarEstado) {
                     estado = EstadoControlador.CONECTADO;
@@ -698,44 +458,6 @@ public final class Controlador implements FachadaControlador {
             }
             if (notificarEstado) {
                 cambiarEstado(EstadoControlador.CONECTADO);
-            }
-        }
-    }
-
-    private void asegurarSintetizadores() throws IOException {
-        if (sintetizadores.size() == 3) {
-            return;
-        }
-        BandClient nuevoCliente = new BandClient(
-                Configuraciones.getInstance());
-        Map<IdSintetizador, Sintetizador> nuevos =
-                new LinkedHashMap<>();
-        nuevos.put(IdSintetizador.PIANO,
-                new PianoSintetizador(nuevoCliente));
-        nuevos.put(IdSintetizador.BAJO,
-                new BajoSintetizador(nuevoCliente));
-        nuevos.put(IdSintetizador.ORGANO,
-                new OrganoSintetizador(nuevoCliente));
-        synchronized (this) {
-            bandClient = nuevoCliente;
-            sintetizadores.clear();
-            sintetizadores.putAll(nuevos);
-        }
-        synchronized (bloqueoAsignaciones) {
-            for (Map.Entry<String, List<IdSintetizador>> asignacion
-                    : asignacionesSintetizador.entrySet()) {
-                Instrumento instrumento =
-                        instrumentos.get(asignacion.getKey());
-                if (instrumento != null) {
-                    List<Sintetizador> destinos = new ArrayList<>();
-                    for (IdSintetizador id : asignacion.getValue()) {
-                        Sintetizador destino = sintetizadores.get(id);
-                        if (destino != null) {
-                            destinos.add(destino);
-                        }
-                    }
-                    instrumento.reemplazarSintetizadores(destinos);
-                }
             }
         }
     }
@@ -758,12 +480,7 @@ public final class Controlador implements FachadaControlador {
             return;
         }
         if (entrada != null) {
-            synchronized (bloqueoAsignaciones) {
-                asignacionesDispositivo.remove(nombre);
-                if ("control".equals(nombre)) {
-                    entradaControl.limpiarDispositivoSeleccionado();
-                }
-            }
+            dispositivos.retirarDispositivo(nombre);
         }
         Throwable causaNotificacion = causa == null
                 ? new IllegalStateException(mensaje)
@@ -781,10 +498,16 @@ public final class Controlador implements FachadaControlador {
         Throwable causaPrincipal = causa == null
                 ? new IllegalStateException(mensaje)
                 : causa;
-        boolean eraDesconectando;
+        boolean cierreEnCurso;
         synchronized (this) {
-            eraDesconectando = desconectando;
-            desconectando = true;
+            cierreEnCurso = desconectando;
+            if (!cierreEnCurso) {
+                desconectando = true;
+            }
+        }
+        if (cierreEnCurso) {
+            notificarError(mensaje, causaPrincipal, registrar);
+            return;
         }
 
         Throwable falloFinal;
@@ -802,112 +525,15 @@ public final class Controlador implements FachadaControlador {
             }
             notificarError(mensaje, falloFinal, registrar);
         } finally {
-            if (!eraDesconectando) {
-                desconectando = false;
-            }
+            desconectando = false;
         }
     }
 
     private Throwable desconectarRecursos(Throwable falloPrincipal) {
-        Throwable fallo = falloPrincipal;
-        fallo = intentarDetenerEntrada(
-                fallo, entradaMicrofono, "micrófono");
-        fallo = intentarDetenerEntrada(
-                fallo, entradaControl, "control");
-        fallo = intentarDetenerEntrada(
-                fallo, entradaTableta, "tableta");
-
-        if (grabando || grabador.estaGrabando()) {
-            busComandos.quitarObservador(grabador);
-            Path archivoTemporal = null;
-            try {
-                archivoTemporal = grabador.archivoSesionTemporal();
-            } catch (RuntimeException excepcion) {
-                fallo = agregarFallo(
-                        fallo,
-                        "No se pudo localizar el temporal de grabación",
-                        excepcion);
-            }
-            try {
-                if (grabador.estaGrabando()) {
-                    grabador.detener();
-                }
-            } catch (IOException | RuntimeException excepcion) {
-                fallo = agregarFallo(
-                        fallo,
-                        "No se pudo detener la grabación al desconectar",
-                        excepcion);
-            }
-            if (archivoTemporal != null) {
-                try {
-                    new LimpiezaGrabacion(
-                            archivoTemporal, archivos)
-                            .limpiarExitosamente();
-                } catch (IOException | RuntimeException excepcion) {
-                    fallo = agregarFallo(
-                            fallo,
-                            "No se pudo limpiar el temporal de grabación",
-                            excepcion);
-                }
-            }
-        }
-
-        boolean interrumpido = false;
-        try {
-            reproductor.detener();
-        } catch (RuntimeException excepcion) {
-            fallo = agregarFallo(
-                    fallo, "No se pudo detener la reproducción", excepcion);
-        }
-        Thread hilo = hiloReproduccion;
-        if (hilo != null && hilo != Thread.currentThread()) {
-            if (hilo.isAlive()) {
-                hilo.interrupt();
-            }
-            interrumpido = esperarTerminacion(hilo);
-        }
-        if (interrumpido) {
-            Thread.currentThread().interrupt();
-            fallo = agregarFallo(
-                    fallo,
-                    "Se interrumpió la espera de finalización de la reproducción",
-                    new InterruptedException(
-                            "La espera de reproducción fue interrumpida"));
-        }
-
-        for (Sintetizador sintetizador
-                : List.copyOf(sintetizadores.values())) {
-            try {
-                sintetizador.liberarTodasLasNotas();
-            } catch (RuntimeException excepcion) {
-                fallo = agregarFallo(
-                        fallo,
-                        "No se pudieron liberar las notas sostenidas",
-                        excepcion);
-            }
-        }
-
-        if (bandClient != null) {
-            try {
-                bandClient.close();
-            } catch (IOException | RuntimeException excepcion) {
-                fallo = agregarFallo(
-                        fallo, "No se pudo cerrar BandClient", excepcion);
-            } finally {
-                bandClient = null;
-                for (Instrumento instrumento : instrumentos.values()) {
-                    try {
-                        instrumento.reemplazarSintetizadores(List.of());
-                    } catch (RuntimeException excepcion) {
-                        fallo = agregarFallo(
-                                fallo,
-                                "No se pudo liberar un sintetizador asignado",
-                                excepcion);
-                    }
-                }
-                sintetizadores.clear();
-            }
-        }
+        Throwable fallo = dispositivos.detenerEntradas(falloPrincipal);
+        fallo = grabaciones.abortarGrabacion(fallo, grabando);
+        fallo = grabaciones.detenerReproduccion(fallo);
+        fallo = dispositivos.liberar(fallo);
         synchronized (this) {
             grabando = false;
             reproduciendo = false;
@@ -916,46 +542,15 @@ public final class Controlador implements FachadaControlador {
         return fallo;
     }
 
-    private Throwable intentarDetenerEntrada(
-            Throwable fallo,
-            Entrada entrada,
-            String nombre) {
-        try {
-            entrada.detener();
-        } catch (RuntimeException excepcion) {
-            return agregarFallo(
-                    fallo,
-                    "No se pudo detener la entrada " + nombre,
-                    excepcion);
-        }
-        return fallo;
-    }
-
     private boolean hayRecursosActivos() {
         synchronized (this) {
             if (estado != EstadoControlador.INICIAL
-                    || bandClient != null || conectando || grabando
-                    || reproduciendo || hiloReproduccion != null) {
+                    || conectando || grabando
+                    || reproduciendo || grabaciones.hayReproduccion()) {
                 return true;
             }
         }
-        return grabador.estaGrabando()
-                || entradaMicrofono.estaActiva()
-                || entradaControl.estaActiva()
-                || entradaTableta.estaActiva();
-    }
-
-    private static Throwable agregarFallo(
-            Throwable principal, String mensaje, Throwable causa) {
-        RuntimeException contextual = new IllegalStateException(
-                mensaje, causa);
-        if (principal == null) {
-            return contextual;
-        }
-        if (principal != contextual && principal != causa) {
-            principal.addSuppressed(contextual);
-        }
-        return principal;
+        return grabaciones.estaGrabando() || dispositivos.hayRecursosActivos();
     }
 
     private static RuntimeException convertirEnRuntime(
@@ -963,18 +558,6 @@ public final class Controlador implements FachadaControlador {
         return causa instanceof RuntimeException runtime
                 ? runtime
                 : new IllegalStateException(mensaje, causa);
-    }
-
-    private static boolean esperarTerminacion(Thread hilo) {
-        boolean interrumpido = false;
-        while (hilo.isAlive()) {
-            try {
-                hilo.join();
-            } catch (InterruptedException excepcion) {
-                interrumpido = true;
-            }
-        }
-        return interrumpido;
     }
 
     private static boolean esFalloTransporte(Throwable causa) {
@@ -1007,13 +590,6 @@ public final class Controlador implements FachadaControlador {
         }
     }
 
-    private boolean notificarAsignacionInvalida(String mensaje) {
-        IllegalArgumentException excepcion =
-                new IllegalArgumentException(mensaje);
-        notificarError(mensaje, excepcion);
-        return false;
-    }
-
     private void notificarError(String mensaje, Throwable causa) {
         notificarError(mensaje, causa, true);
     }
@@ -1041,60 +617,9 @@ public final class Controlador implements FachadaControlador {
 
     private static Controlador crearInstanciaProduccion() {
         try {
-            return new Controlador();
+            return FabricaControlador.crear();
         } catch (RuntimeException | IOException excepcion) {
             throw new ExceptionInInitializerError(excepcion);
         }
-    }
-
-    private static ComponentesProduccion crearComponentesProduccion()
-            throws IOException {
-        ComponentesProduccion componentes =
-                new ComponentesProduccion();
-        componentes.busComandos = new BusComandos();
-        componentes.microfono = new Microfono(
-                null, componentes.busComandos);
-        componentes.control = new Control(
-                null, componentes.busComandos);
-        componentes.tableta = new Tableta(
-                null, componentes.busComandos);
-        componentes.entradaMicrofono =
-                new EntradaMicrofono(componentes.microfono);
-        componentes.entradaControl =
-                new EntradaControl(componentes.control);
-        componentes.entradaTableta =
-                new EntradaTableta(componentes.tableta);
-        componentes.sintetizadores = new ConcurrentHashMap<>();
-        componentes.archivos = ArchivosGrabacion.inicializar();
-        componentes.grabador = new Grabador(
-                componentes.archivos.directorio());
-        componentes.cargador = new CargadorGrabaciones(
-                componentes.archivos);
-        componentes.finalizador = new FinalizadorGrabacion(
-                componentes.grabador, componentes.archivos);
-        FabricaComandosGrabados fabrica =
-                new FabricaComandosGrabados(
-                        id -> componentes.sintetizadores.get(id));
-        componentes.reproductor = new Reproductor(
-                fabrica::reconstruir,
-                System::nanoTime,
-                nanos -> LockSupport.parkNanos(nanos));
-        return componentes;
-    }
-
-    private static final class ComponentesProduccion {
-        private BusComandos busComandos;
-        private Microfono microfono;
-        private Control control;
-        private Tableta tableta;
-        private EntradaMicrofono entradaMicrofono;
-        private EntradaControl entradaControl;
-        private EntradaTableta entradaTableta;
-        private Map<IdSintetizador, Sintetizador> sintetizadores;
-        private Grabador grabador;
-        private CargadorGrabaciones cargador;
-        private FinalizadorGrabacion finalizador;
-        private Reproductor reproductor;
-        private ArchivosGrabacion archivos;
     }
 }

@@ -12,6 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongSupplier;
 
@@ -95,6 +96,25 @@ class AsignacionesYGrabacionControladorTest {
                 fixture.controlador().dispositivoPorInstrumento());
         assertEquals(2, errores.size());
         fixture.controlador().desconectar();
+    }
+
+    @Test
+    void restauraLaSeleccionAnteriorSiFallaElReemplazo() throws Exception {
+        Fixture fixture = crearFixture();
+        Controlador controlador = fixture.controlador();
+        List<String> errores = new ArrayList<>();
+        controlador.registrarObservadorEstado(observadorErrores(errores));
+        assertTrue(controlador.asignarDispositivo("control", "pad-a"));
+        assertTrue(controlador.conectar());
+        fixture.entradaControl().fallarSeleccion("pad-b");
+
+        assertFalse(controlador.asignarDispositivo("control", "pad-b"));
+
+        assertEquals("pad-a", fixture.entradaControl().dispositivoSeleccionado());
+        assertEquals(Map.of("control", "pad-a"), controlador.dispositivoPorInstrumento());
+        assertTrue(fixture.entradaControl().estaActiva());
+        assertEquals(1, errores.size());
+        controlador.desconectar();
     }
 
     @Test
@@ -228,6 +248,55 @@ class AsignacionesYGrabacionControladorTest {
     }
 
     @Test
+    void falloDeTransporteDuranteElCierreNoBloqueaLaReproduccion()
+            throws Exception {
+        Fixture fixture = crearFixture();
+        Controlador controlador = fixture.controlador();
+        CountDownLatch reproduccionIniciada = new CountDownLatch(1);
+        CountDownLatch cierreIniciado = new CountDownLatch(1);
+        CountDownLatch cierreFinalizado = new CountDownLatch(1);
+        AtomicReference<Throwable> falloCierre = new AtomicReference<>();
+        List<String> errores = new java.util.concurrent.CopyOnWriteArrayList<>();
+        controlador.registrarObservadorEstado(observadorErrores(errores));
+        assertTrue(controlador.conectar());
+        assertTrue(controlador.asignarSintetizador("control", IdSintetizador.PIANO));
+        controlador.iniciarGrabacion();
+        fixture.control().convertirEvento(0.25, 0.75);
+        controlador.detenerGrabacion("Sesion de fallo");
+
+        fixture.entradaMicrofono().alDetener(cierreIniciado::countDown);
+        fixture.piano().alEjecutar(() -> {
+            reproduccionIniciada.countDown();
+            try {
+                cierreIniciado.await();
+            } catch (InterruptedException excepcion) {
+                Thread.currentThread().interrupt();
+            }
+            throw new FalloTransporteException(
+                    "fallo local", new IOException("transporte cerrado"));
+        });
+        assertTrue(controlador.reproducirSesion("Sesion de fallo"));
+        assertTrue(reproduccionIniciada.await(2, TimeUnit.SECONDS));
+
+        Thread cierre = new Thread(() -> {
+            try {
+                controlador.desconectar();
+            } catch (RuntimeException excepcion) {
+                falloCierre.set(excepcion);
+            } finally {
+                cierreFinalizado.countDown();
+            }
+        });
+        cierre.setDaemon(true);
+        cierre.start();
+
+        assertTrue(cierreFinalizado.await(2, TimeUnit.SECONDS));
+        assertNull(falloCierre.get());
+        assertEquals(EstadoControlador.INICIAL, controlador.estadoActual());
+        assertEquals(1, errores.size());
+    }
+
+    @Test
     void cierreContinuaConLosDemasRecursosTrasUnFallo()
             throws Exception {
         Fixture fixture = crearFixture();
@@ -331,6 +400,27 @@ class AsignacionesYGrabacionControladorTest {
         controlador.desconectar();
     }
 
+    @Test
+    void retiraElGrabadorDelBusAlFinalizar() throws Exception {
+        Fixture fixture = crearFixture();
+        Controlador controlador = fixture.controlador();
+        assertTrue(controlador.conectar());
+        assertTrue(controlador.asignarSintetizador("control", IdSintetizador.PIANO));
+
+        controlador.iniciarGrabacion();
+        fixture.control().convertirEvento(0.25, 0.75);
+        controlador.detenerGrabacion("Sesion finalizada");
+        fixture.control().convertirEvento(0.5, 0.75);
+
+        assertEquals(List.of("Sesion finalizada"), controlador.buscarSesiones("finalizada"));
+        try (GrabacionAbierta grabacion = fixture.cargador()
+                .abrir("Sesion finalizada").orElseThrow()) {
+            assertTrue(grabacion.siguienteComando().isPresent());
+            assertTrue(grabacion.siguienteComando().isEmpty());
+        }
+        controlador.desconectar();
+    }
+
     private Fixture crearFixture() throws Exception {
         return crearFixture(
                 System::nanoTime,
@@ -428,6 +518,7 @@ class AsignacionesYGrabacionControladorTest {
         private int inicios;
         private boolean fallarAlIniciar;
         private boolean fallarAlDetener;
+        private String seleccionQueFalla;
 
         private EntradaControlFalsa(Control control) {
             super(control);
@@ -459,6 +550,9 @@ class AsignacionesYGrabacionControladorTest {
 
         @Override
         public void seleccionarDispositivo(String nombre) {
+            if (nombre.equals(seleccionQueFalla)) {
+                throw new IllegalStateException("fallo al seleccionar control");
+            }
             super.seleccionarDispositivo(nombre);
             dispositivoSeleccionado = nombre;
         }
@@ -484,12 +578,17 @@ class AsignacionesYGrabacionControladorTest {
         private void fallarAlIniciar(boolean fallar) {
             fallarAlIniciar = fallar;
         }
+
+        private void fallarSeleccion(String nombre) {
+            seleccionQueFalla = nombre;
+        }
     }
 
     private static final class EntradaMicrofonoFalsa
             extends EntradaMicrofono {
 
         private boolean activa;
+        private Runnable alDetener;
 
         private EntradaMicrofonoFalsa(Microfono microfono) {
             super(microfono);
@@ -503,11 +602,18 @@ class AsignacionesYGrabacionControladorTest {
         @Override
         public synchronized void detener() {
             activa = false;
+            if (alDetener != null) {
+                alDetener.run();
+            }
         }
 
         @Override
         public synchronized boolean estaActiva() {
             return activa;
+        }
+
+        private void alDetener(Runnable accion) {
+            alDetener = accion;
         }
     }
 
@@ -543,6 +649,7 @@ class AsignacionesYGrabacionControladorTest {
         private final AtomicInteger ejecuciones = new AtomicInteger();
         private final AtomicInteger liberaciones = new AtomicInteger();
         private boolean fallarLiberacion;
+        private Runnable alEjecutar;
 
         private SintetizadorFalso(IdSintetizador id) {
             this.id = id;
@@ -557,6 +664,9 @@ class AsignacionesYGrabacionControladorTest {
         public void ejecutar(
                 TipoAccion tipoAccion, double... parametros) {
             ejecuciones.incrementAndGet();
+            if (alEjecutar != null) {
+                alEjecutar.run();
+            }
         }
 
         @Override
@@ -578,6 +688,10 @@ class AsignacionesYGrabacionControladorTest {
 
         private void fallarLiberacion(boolean fallar) {
             fallarLiberacion = fallar;
+        }
+
+        private void alEjecutar(Runnable accion) {
+            alEjecutar = accion;
         }
     }
 

@@ -56,6 +56,27 @@ class ControladorTest {
     }
 
     @Test
+    void fabricaUsaLosArchivosIndicadosSinIniciarLaConexion()
+            throws Exception {
+        ArchivosGrabacion archivos =
+                ArchivosGrabacion.inicializar(carpetaTemporal);
+        Grabador grabador = new Grabador(archivos.directorio());
+        grabador.iniciar();
+        new FinalizadorGrabacion(grabador, archivos).finalizar("Sesion");
+
+        Controlador controlador = FabricaControlador.crear(archivos);
+
+        assertEquals(EstadoControlador.INICIAL, controlador.estadoActual());
+        assertEquals(List.of("Sesion"), controlador.listarSesiones());
+        assertEquals(true, controlador.asignarSintetizador(
+                "control", IdSintetizador.PIANO));
+        assertEquals(List.of(IdSintetizador.PIANO),
+                controlador.sintetizadoresPorInstrumento().get("control"));
+        assertThrows(IllegalStateException.class, controlador::iniciarGrabacion);
+        controlador.desconectar();
+    }
+
+    @Test
     void iniciaSinEntradasActivasYComparteLosServiciosInyectados()
             throws Exception {
         Controlador controlador = crearControlador();
