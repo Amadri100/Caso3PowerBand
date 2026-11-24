@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "PowerBand (Windows)",
+            "request": "launch",
+            "mainClass": "powerband.main.Main",
+            "projectName": "powerband",
+            "cwd": "${workspaceFolder}\\powerband",
+            "vmArgs": "\"-Djava.library.path=${workspaceFolder}\\powerband\\target\\natives\""
+        }
+    ]
+}

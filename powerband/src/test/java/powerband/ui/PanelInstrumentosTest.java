@@ -12,11 +12,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
 import org.junit.jupiter.api.Test;
 
 import powerband.controlador.FachadaControlador;
+import powerband.controlador.ObservadorEstado;
 import powerband.sintetizadores.IdSintetizador;
+import powerband.util.DispositivoEntrada;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -37,7 +40,8 @@ public class PanelInstrumentosTest {
                 return List.of("piano", "bajo");
             }
             if (metodo.getName().equals("listarDispositivos")) {
-                return List.of("teclado", "gamepad");
+                return List.of(new DispositivoEntrada("teclado", "teclado"),
+                        new DispositivoEntrada("gamepad", "gamepad"));
             }
             if (metodo.getName().equals("listarSintetizadores")) {
                 return List.of(
@@ -79,7 +83,7 @@ public class PanelInstrumentosTest {
             assertEquals("piano",
                     panelReferencia.get().listaInstrumentos()
                             .getSelectedValue());
-            assertEquals("teclado",
+            assertEquals(new DispositivoEntrada("teclado", "teclado"),
                     panelReferencia.get().selectorDispositivo()
                             .getSelectedItem());
             assertEquals(2,
@@ -107,7 +111,8 @@ public class PanelInstrumentosTest {
                 return List.of("piano");
             }
             if (metodo.getName().equals("listarDispositivos")) {
-                return List.of("teclado", "gamepad");
+                return List.of(new DispositivoEntrada("teclado", "teclado"),
+                        new DispositivoEntrada("gamepad", "gamepad"));
             }
             if (metodo.getName().equals("listarSintetizadores")) {
                 return List.of(
@@ -148,11 +153,12 @@ public class PanelInstrumentosTest {
 
         SwingUtilities.invokeAndWait(() ->
                 panelReferencia.set(new PanelInstrumentos(fachada)));
-        esperarDisponible(panelReferencia.get().botonDispositivo());
+        esperarDisponible(panelReferencia.get().botonSintetizadores());
 
         SwingUtilities.invokeAndWait(() -> {
             PanelInstrumentos panel = panelReferencia.get();
-            panel.selectorDispositivo().setSelectedItem("gamepad");
+            panel.selectorDispositivo().setSelectedItem(
+                    new DispositivoEntrada("gamepad", "gamepad"));
             panel.botonDispositivo().doClick();
         });
         esperarDisponible(panelReferencia.get().botonDispositivo());
@@ -220,6 +226,9 @@ public class PanelInstrumentosTest {
                 panelReferencia.set(new PanelInstrumentos(fachada)));
         esperarDisponible(panelReferencia.get().botonSintetizadores());
         SwingUtilities.invokeAndWait(() -> {
+            assertTrue(panelReferencia.get().mensajeEstado().getText()
+                    .contains("No hay dispositivos compatibles"));
+            assertTrue(!panelReferencia.get().botonDispositivo().isEnabled());
             panelReferencia.get().listaSintetizadores().clearSelection();
             panelReferencia.get().botonSintetizadores().doClick();
         });
@@ -236,9 +245,11 @@ public class PanelInstrumentosTest {
             if (metodo.getName().equals("listarInstrumentos")
                     || metodo.getName().equals("listarDispositivos")
                     || metodo.getName().equals("listarSintetizadores")
+                    || metodo.getName().equals("listarSesiones")
                     || metodo.getName().equals("buscarSesiones")) {
                 return List.of();
             }
+
             if (metodo.getName().equals("dispositivoPorInstrumento")
                     || metodo.getName().equals(
                             "sintetizadoresPorInstrumento")
@@ -263,6 +274,116 @@ public class PanelInstrumentosTest {
                             .panelVista(Vista.INSTRUMENTOS));
             assertEquals(6, panelReferencia.get().cantidadVistas());
         });
+    }
+
+    @Test
+    void descartaLaRespuestaAnteriorAlCambiarDeInstrumento() throws Exception {
+        CountDownLatch primeraIniciada = new CountDownLatch(1);
+        CountDownLatch liberarPrimera = new CountDownLatch(1);
+        CountDownLatch primeraFinalizada = new CountDownLatch(1);
+        AtomicReference<PanelInstrumentos> referencia = new AtomicReference<>();
+        FachadaControlador fachada = fachada((metodo, argumentos) -> {
+            if (metodo.getName().equals("listarInstrumentos")) {
+                return List.of("primero", "segundo");
+            }
+            if (metodo.getName().equals("listarDispositivos")) {
+                if ("primero".equals(argumentos[0])) {
+                    primeraIniciada.countDown();
+                    try {
+                        if (!liberarPrimera.await(5, TimeUnit.SECONDS)) {
+                            throw new IllegalStateException("No se liberó la primera consulta");
+                        }
+                    } catch (InterruptedException excepcion) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(excepcion);
+                    }
+                    return List.of(new DispositivoEntrada("antiguo", "Antiguo"));
+                }
+                return List.of(new DispositivoEntrada("nuevo", "Nuevo"));
+            }
+            if (metodo.getName().equals("listarSintetizadores")) {
+                return List.of();
+            }
+            if (Map.class.isAssignableFrom(metodo.getReturnType())) {
+                return Map.of();
+            }
+            return null;
+        });
+
+        SwingUtilities.invokeAndWait(() -> referencia.set(new PanelInstrumentos(fachada)));
+        assertTrue(primeraIniciada.await(5, TimeUnit.SECONDS));
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                SwingWorker<?, ?> primera = referencia.get().consultaActual();
+                primera.addPropertyChangeListener(evento -> {
+                    if ("state".equals(evento.getPropertyName())
+                            && evento.getNewValue() == SwingWorker.StateValue.DONE) {
+                        primeraFinalizada.countDown();
+                    }
+                });
+                referencia.get().listaInstrumentos().setSelectedIndex(1);
+            });
+            esperarDisponible(referencia.get().botonSintetizadores());
+            liberarPrimera.countDown();
+            assertTrue(primeraFinalizada.await(5, TimeUnit.SECONDS));
+            SwingUtilities.invokeAndWait(() -> {
+                assertEquals("segundo", referencia.get().listaInstrumentos().getSelectedValue());
+                assertEquals(new DispositivoEntrada("nuevo", "Nuevo"),
+                        referencia.get().selectorDispositivo().getItemAt(0));
+                assertEquals(1, referencia.get().selectorDispositivo().getItemCount());
+            });
+        } finally {
+            liberarPrimera.countDown();
+        }
+    }
+    @Test
+    void actualizaLaListaAlRecibirUnaDesconexion() throws Exception {
+        AtomicReference<ObservadorEstado> observador = new AtomicReference<>();
+        AtomicReference<List<DispositivoEntrada>> disponibles = new AtomicReference<>(
+                List.of(new DispositivoEntrada("audio", "Micrófono")));
+        AtomicReference<Map<String, String>> asignaciones =
+                new AtomicReference<>(Map.of("microfono", "audio"));
+        AtomicReference<PanelInstrumentos> referencia = new AtomicReference<>();
+        FachadaControlador fachada = fachada((metodo, argumentos) -> {
+            return switch (metodo.getName()) {
+                case "listarInstrumentos" -> List.of("microfono");
+                case "listarDispositivos" -> disponibles.get();
+                case "listarSintetizadores" -> List.of();
+                case "dispositivoPorInstrumento" -> asignaciones.get();
+                case "sintetizadoresPorInstrumento" -> Map.of();
+                case "registrarObservadorEstado" -> {
+                    observador.set((ObservadorEstado) argumentos[0]);
+                    yield null;
+                }
+                case "retirarObservadorEstado" -> {
+                    observador.set(null);
+                    yield null;
+                }
+                default -> null;
+            };
+        });
+
+        SwingUtilities.invokeAndWait(() -> {
+            referencia.set(new PanelInstrumentos(fachada));
+            referencia.get().addNotify();
+        });
+        try {
+            esperarDisponible(referencia.get().botonDispositivo());
+            disponibles.set(List.of());
+            asignaciones.set(Map.of());
+            observador.get().dispositivoDesconectado("microfono");
+            SwingUtilities.invokeAndWait(() -> { });
+            esperarDisponible(referencia.get().botonSintetizadores());
+            SwingUtilities.invokeAndWait(() -> {
+                assertEquals(0, referencia.get().selectorDispositivo().getItemCount());
+                assertTrue(!referencia.get().botonDispositivo().isEnabled());
+                assertTrue(referencia.get().mensajeEstado().getText()
+                        .contains("No hay dispositivos compatibles"));
+            });
+        } finally {
+            SwingUtilities.invokeAndWait(() -> referencia.get().removeNotify());
+        }
+        assertEquals(null, observador.get());
     }
 
     private static FachadaControlador fachada(

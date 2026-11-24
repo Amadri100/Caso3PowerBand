@@ -5,4 +5,7 @@ public interface ObservadorEstado {
     void estadoCambiado(EstadoControlador estado);
 
     void errorNotificado(String mensaje, Throwable causa);
+
+    default void dispositivoDesconectado(String instrumentoId) {
+    }
 }

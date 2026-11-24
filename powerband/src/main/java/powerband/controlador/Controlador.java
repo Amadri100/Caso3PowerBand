@@ -18,6 +18,7 @@ import powerband.grabaciones.GrabacionAbierta;
 import powerband.grabaciones.Grabador;
 import powerband.grabaciones.Reproductor;
 import powerband.input.Entrada;
+import powerband.util.DispositivoEntrada;
 import powerband.input.EntradaControl;
 import powerband.input.EntradaMicrofono;
 import powerband.input.EntradaTableta;
@@ -72,7 +73,7 @@ public final class Controlador implements FachadaControlador {
                 finalizador,
                 reproductor,
                 archivos,
-                EntradaControl::listarDispositivos);
+                (Supplier<List<String>>) null);
     }
 
     protected Controlador(
@@ -105,7 +106,9 @@ public final class Controlador implements FachadaControlador {
                 busComandos, grabador, cargador, finalizador, reproductor, archivos);
         dispositivos = new ControladorDispositivos(
                 microfono, control, tableta, entradaMicrofono, entradaControl,
-                entradaTableta, sintetizadores, proveedorDispositivos,
+                entradaTableta, sintetizadores, proveedorDispositivos == null
+                        ? null : instrumento -> proveedorDispositivos.get().stream()
+                                .map(nombre -> new DispositivoEntrada(nombre, nombre)).toList(),
                 this::notificarError, this::entradaDesconectada);
     }
 
@@ -202,6 +205,21 @@ public final class Controlador implements FachadaControlador {
     @Override
     public List<String> listarDispositivos() {
         return dispositivos.listarDispositivos();
+    }
+
+    @Override
+    public List<DispositivoEntrada> listarDispositivos(String instrumentoId) {
+        return dispositivos.listarDispositivos(instrumentoId);
+    }
+
+    @Override
+    public java.awt.Component superficieTableta() {
+        return dispositivos.superficieTableta();
+    }
+
+    @Override
+    public void establecerModoDescubrimientoTableta(boolean activo) {
+        dispositivos.establecerModoDescubrimientoTableta(activo);
     }
 
     @Override
@@ -469,6 +487,10 @@ public final class Controlador implements FachadaControlador {
                 + ": " + (motivo == null ? "dispositivo desconectado"
                         : motivo);
         if (desconectando) {
+            if (entrada != null && !esFalloTransporte(causa)) {
+                dispositivos.retirarDispositivo(nombre);
+                notificarDispositivoDesconectado(nombre);
+            }
             Throwable causaNotificacion = causa == null
                     ? new IllegalStateException(mensaje)
                     : causa;
@@ -481,6 +503,7 @@ public final class Controlador implements FachadaControlador {
         }
         if (entrada != null) {
             dispositivos.retirarDispositivo(nombre);
+            notificarDispositivoDesconectado(nombre);
         }
         Throwable causaNotificacion = causa == null
                 ? new IllegalStateException(mensaje)
@@ -592,6 +615,21 @@ public final class Controlador implements FachadaControlador {
 
     private void notificarError(String mensaje, Throwable causa) {
         notificarError(mensaje, causa, true);
+    }
+
+    private void notificarDispositivoDesconectado(String instrumento) {
+        List<ObservadorEstado> copia;
+        synchronized (observadores) {
+            copia = List.copyOf(observadores);
+        }
+        for (ObservadorEstado observador : copia) {
+            try {
+                observador.dispositivoDesconectado(instrumento);
+            } catch (RuntimeException excepcion) {
+                LoggerPowerBand.getInstance().registrarError(
+                        "Fallo al notificar la desconexión a un observador: " + excepcion);
+            }
+        }
     }
 
     private void notificarError(

@@ -1,5 +1,7 @@
 package powerband.controlador;
 
+import java.awt.Canvas;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import powerband.archivos.ValidacionesGenerales;
+import powerband.util.DispositivoEntrada;
 import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
 
@@ -16,8 +19,11 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     private static final List<String> DISPOSITIVOS_EJEMPLO = List.of(
             "audio-demo", "gamepad-demo", "lapiz-demo");
     private static final List<String> INSTRUMENTOS_EJEMPLO = List.of(
-            "piano", "bajo", "organo");
+            "microfono", "control", "tableta");
+    private static final Map<String, String> DISPOSITIVO_POR_INSTRUMENTO = Map.of(
+            "microfono", "audio-demo", "control", "gamepad-demo", "tableta", "lapiz-demo");
 
+    private final Component superficie = new Canvas();
     private final List<ObservadorEstado> observadores = new ArrayList<>();
     private final Map<String, String> asignacionesDispositivo =
             new LinkedHashMap<>();
@@ -60,10 +66,32 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     }
 
     @Override
+    public List<DispositivoEntrada> listarDispositivos(String instrumentoId) {
+        String dispositivo = instrumentoId == null ? null
+                : DISPOSITIVO_POR_INSTRUMENTO.get(instrumentoId);
+        if (dispositivo == null) {
+            throw errorArgumento("El instrumento de ejemplo no existe");
+        }
+        return List.of(new DispositivoEntrada(dispositivo, dispositivo));
+    }
+
+    @Override
+    public Component superficieTableta() {
+        return superficie;
+    }
+
+    @Override
+    public void establecerModoDescubrimientoTableta(boolean activo) {
+    }
+
+    @Override
     public boolean asignarDispositivo(
             String instrumentoId, String dispositivoId) {
-        if (!INSTRUMENTOS_EJEMPLO.contains(instrumentoId)
-                || !DISPOSITIVOS_EJEMPLO.contains(dispositivoId)) {
+        if (instrumentoId == null || !INSTRUMENTOS_EJEMPLO.contains(instrumentoId)
+                || !Objects.equals(DISPOSITIVO_POR_INSTRUMENTO.get(instrumentoId), dispositivoId)
+                || asignacionesDispositivo.entrySet().stream()
+                        .anyMatch(asignacion -> !asignacion.getKey().equals(instrumentoId)
+                                && asignacion.getValue().equals(dispositivoId))) {
             IllegalArgumentException error = new IllegalArgumentException(
                     "El instrumento o dispositivo de ejemplo no existe");
             notificarError(error.getMessage(), error);

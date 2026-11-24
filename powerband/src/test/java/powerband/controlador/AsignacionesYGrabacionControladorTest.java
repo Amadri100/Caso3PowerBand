@@ -167,6 +167,36 @@ class AsignacionesYGrabacionControladorTest {
     }
 
     @Test
+    void retiroDuranteCierreGlobalEliminaLaAsignacionAfectada() throws Exception {
+        Fixture fixture = crearFixture();
+        Controlador controlador = fixture.controlador();
+        List<String> retirados = new ArrayList<>();
+        controlador.registrarObservadorEstado(new ObservadorEstado() {
+            @Override
+            public void estadoCambiado(EstadoControlador estado) {
+            }
+
+            @Override
+            public void errorNotificado(String mensaje, Throwable causa) {
+            }
+
+            @Override
+            public void dispositivoDesconectado(String instrumento) {
+                retirados.add(instrumento);
+            }
+        });
+        assertTrue(controlador.asignarDispositivo("control", "pad-a"));
+        assertTrue(controlador.conectar());
+        fixture.entradaMicrofono().alDetener(
+                () -> fixture.entradaControl().desconectar("retirado"));
+
+        controlador.desconectar();
+
+        assertTrue(controlador.dispositivoPorInstrumento().isEmpty());
+        assertEquals(List.of("control"), retirados);
+    }
+
+    @Test
     void falloLocalDeTransporteDuranteGrabacionLimpiaElTemporal()
             throws Exception {
         Fixture fixture = crearFixture();

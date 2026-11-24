@@ -1,8 +1,10 @@
 package powerband.controlador;
 
+import java.awt.Component;
 import java.util.List;
 import java.util.Map;
 
+import powerband.util.DispositivoEntrada;
 import powerband.sintetizadores.IdSintetizador;
 
 public interface FachadaControlador {
@@ -12,6 +14,12 @@ public interface FachadaControlador {
     void desconectar();
 
     List<String> listarDispositivos();
+
+    List<DispositivoEntrada> listarDispositivos(String instrumentoId);
+
+    Component superficieTableta();
+
+    void establecerModoDescubrimientoTableta(boolean activo);
 
     boolean asignarDispositivo(String instrumentoId, String dispositivoId);
 

@@ -1,10 +1,13 @@
 package powerband.input;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
@@ -14,6 +17,7 @@ import net.java.games.input.EventQueue;
 
 import powerband.instrumentos.Control;
 import powerband.util.Constantes;
+import powerband.util.DispositivoEntrada;
 
 public class EntradaControl extends Entrada {
 
@@ -82,18 +86,41 @@ public class EntradaControl extends Entrada {
             return false;
         }
         Controller.Type tipo = controlador.getType();
-        if (tipo == Controller.Type.KEYBOARD
-                || tipo == Controller.Type.MOUSE) {
-            return false;
-        }
-        return esDispositivoValido(controlador.getName());
+        return (tipo == Controller.Type.GAMEPAD || tipo == Controller.Type.STICK)
+                && Arrays.stream(controlador.getComponents()).anyMatch(componente ->
+                        componente != null && (componente.getIdentifier() instanceof Component.Identifier.Axis
+                                || componente.getIdentifier() instanceof Component.Identifier.Button));
+    }
+
+    public static List<DispositivoEntrada> dispositivosCompatibles() {
+        return dispositivosCompatibles(
+                ControllerEnvironment.getDefaultEnvironment().getControllers());
+    }
+
+    static List<DispositivoEntrada> dispositivosCompatibles(Controller[] controladores) {
+        List<Controller> controles = List.of(controladores).stream()
+                .filter(EntradaControl::esDispositivoValido).toList();
+        Map<String, Long> cantidades = controles.stream()
+                .collect(Collectors.groupingBy(EntradaControl::identificador,
+                        Collectors.counting()));
+        return controles.stream()
+                .filter(controlador -> cantidades.get(identificador(controlador)) == 1)
+                .filter(EntradaControl::responde)
+                .map(controlador -> new DispositivoEntrada(
+                        identificador(controlador),
+                        controlador.getName() + " (" + controlador.getType() + ")"))
+                .toList();
+    }
+
+    private static String identificador(Controller controlador) {
+        return "control:" + controlador.getType() + ":" + controlador.getName();
     }
 
     public void seleccionarDispositivo(String nombre) {
         Objects.requireNonNull(nombre, "nombreDispositivo");
-        if (!esDispositivoValido(nombre)) {
+        if (nombre.isBlank()) {
             throw new IllegalArgumentException(
-                    "Teclado y mouse no son dispositivos validos");
+                    "El identificador del control no puede estar vacio");
         }
         nombreDispositivo = nombre;
     }
@@ -101,6 +128,38 @@ public class EntradaControl extends Entrada {
     public void limpiarDispositivoSeleccionado() {
         nombreDispositivo = null;
         dispositivo = null;
+    }
+
+    public static boolean dispositivoDisponible(String id) {
+        return comprobarDisponibilidad(id) == DisponibilidadDispositivo.DISPONIBLE;
+    }
+
+    public static DisponibilidadDispositivo comprobarDisponibilidad(String id) {
+        return comprobarDisponibilidad(id,
+                ControllerEnvironment.getDefaultEnvironment().getControllers());
+    }
+
+    static DisponibilidadDispositivo comprobarDisponibilidad(String id, Controller[] controladores) {
+        Controller coincidencia = null;
+        for (Controller candidato : controladores) {
+            if (esDispositivoValido(candidato) && identificador(candidato).equals(id)) {
+                if (coincidencia != null) {
+                    return DisponibilidadDispositivo.AMBIGUO;
+                }
+                coincidencia = candidato;
+            }
+        }
+        if (coincidencia == null) {
+            return DisponibilidadDispositivo.NO_DISPONIBLE;
+        }
+        return responde(coincidencia) ? DisponibilidadDispositivo.DISPONIBLE
+                : DisponibilidadDispositivo.NO_DISPONIBLE;
+    }
+
+    private static boolean responde(Controller controlador) {
+        synchronized (controlador) {
+            return controlador.poll();
+        }
     }
 
     public void procesarEvento(double eje, double valor) {
@@ -115,33 +174,45 @@ public class EntradaControl extends Entrada {
         }
     }
 
+    void procesarEvento(Component[] componentes, Component componente, float valor) {
+        int indice = Arrays.asList(componentes).indexOf(componente);
+        if (indice < 0) {
+            throw new IllegalStateException("El evento pertenece a un componente desconocido");
+        }
+        double eje = componentes.length == 1
+                ? 0.0 : (double) indice / (componentes.length - 1);
+        double valorNormalizado = componente.isAnalog()
+                ? NormalizadorEntrada.normalizarCeroUno(valor, -1.0, 1.0)
+                : valor;
+        procesarEvento(eje, valorNormalizado);
+    }
+
     @Override
     protected void ejecutarCaptura() throws Exception {
-        dispositivo = buscarDispositivo();
-        if (dispositivo == null) {
+        Controller actual = buscarDispositivo();
+        dispositivo = actual;
+        if (actual == null) {
             throw new IllegalStateException(
                     "No se encontro el dispositivo de control configurado");
         }
 
         while (estaActiva()) {
-            if (!dispositivo.poll()) {
+            boolean responde;
+            synchronized (actual) {
+                responde = actual.poll();
+                EventQueue cola = actual.getEventQueue();
+                Event evento = new Event();
+                while (responde && cola.getNextEvent(evento)) {
+                    Component componente = evento.getComponent();
+                    if (componente == null) {
+                        continue;
+                    }
+                    procesarEvento(actual.getComponents(), componente, evento.getValue());
+                }
+            }
+            if (!responde) {
                 desconectar("el control dejo de responder");
                 return;
-            }
-            EventQueue cola = dispositivo.getEventQueue();
-            Event evento = new Event();
-            while (cola.getNextEvent(evento)) {
-                Component componente = evento.getComponent();
-                if (componente == null) {
-                    continue;
-                }
-                float valor = evento.getValue();
-                double valorNormalizado =
-                        NormalizadorEntrada.normalizarCeroUno(
-                                valor, -1.0, 1.0);
-                procesarEvento(
-                        componente.getIdentifier().hashCode(),
-                        valorNormalizado);
             }
             Thread.sleep(10);
         }
@@ -156,13 +227,21 @@ public class EntradaControl extends Entrada {
         Controller[] controladores =
                 ControllerEnvironment.getDefaultEnvironment()
                         .getControllers();
+        Controller encontrado = null;
         for (Controller controlador : controladores) {
             if (esDispositivoValido(controlador)
                     && (nombreDispositivo == null
+                    || nombreDispositivo.equals(identificador(controlador))
                     || nombreDispositivo.equals(controlador.getName()))) {
-                return controlador;
+                if (encontrado != null && nombreDispositivo != null) {
+                    throw new IllegalStateException("El control seleccionado es ambiguo");
+                }
+                encontrado = controlador;
+                if (nombreDispositivo == null) {
+                    break;
+                }
             }
         }
-        return null;
+        return encontrado;
     }
 }

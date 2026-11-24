@@ -1,2 +1,19 @@
 2026-11-23T16:20:36.738765800Z [error] Desconexion de entrada microfono: El microfono no tiene un sintetizador asignado
 2026-11-23T16:26:01.621018600Z [error] Desconexion de entrada microfono: El microfono no tiene un sintetizador asignado
+2026-11-24T00:31:47.026018400Z [error] El organo solo admite inicio y finalizacion de notas
+2026-11-24T00:31:47.040500400Z [error] Desconexion de entrada microfono: El organo solo admite inicio y finalizacion de notas
+2026-11-24T01:28:06.209843Z [error] nota MIDI fuera de rango para piano: 50.558258463578056
+2026-11-24T01:28:06.230857800Z [error] Desconexion de entrada microfono: nota MIDI fuera de rango para piano: 50.558258463578056
+2026-11-24T02:33:05.667187600Z [error] duracion en milisegundos fuera de rango para bajo: 0.4919203519821167
+2026-11-24T02:33:05.669195600Z [error] Desconexion de entrada control: duracion en milisegundos fuera de rango para bajo: 0.4919203519821167
+2026-11-24T02:33:53.844452500Z [error] nota MIDI fuera de rango para piano: 56.55565265726017
+2026-11-24T02:33:53.860670400Z [error] Desconexion de entrada microfono: nota MIDI fuera de rango para piano: 56.55565265726017
+2026-11-24T02:33:56.557801500Z [error] Desconexion de entrada control: el dispositivo ya no está disponible
+2026-11-24T03:31:18.143912200Z [error] No se pudieron detectar los dispositivos: java.lang.IllegalStateException: No se pudo iniciar Wintab; compruebe el controlador de la tableta
+2026-11-24T03:31:18.185055700Z [error] Fallo en una operación del panel de instrumentos: java.lang.IllegalStateException: No se pudo iniciar Wintab; compruebe el controlador de la tableta
+2026-11-24T03:36:54.542619500Z [error] No se pudieron detectar los dispositivos: java.lang.IllegalStateException: No se pudo iniciar Wintab; compruebe el controlador de la tableta
+2026-11-24T03:36:54.547589600Z [error] Fallo en una operación del panel de instrumentos: java.lang.IllegalStateException: No se pudo iniciar Wintab; compruebe el controlador de la tableta
+2026-11-24T03:46:42.786992Z [error] nota MIDI fuera de rango para bajo: 50.864465270248104
+2026-11-24T03:46:42.817591600Z [error] Desconexion de entrada microfono: nota MIDI fuera de rango para bajo: 50.864465270248104
+2026-11-24T03:47:46.204528100Z [error] nota MIDI fuera de rango para bajo: 52.942132580287385
+2026-11-24T03:47:46.223964100Z [error] Desconexion de entrada microfono: nota MIDI fuera de rango para bajo: 52.942132580287385

@@ -27,7 +27,8 @@ public class Microfono extends Instrumento {
             throw new IllegalStateException(
                     "El microfono no tiene un sintetizador asignado");
         }
-        double notaMidi = frecuenciaAMidi(frecuenciaHz);
+        double notaMidiDouble = frecuenciaAMidi(frecuenciaHz);
+        int notaMidi = (int) Math.round(notaMidiDouble);
         Comando comando = new ComandoPuntual(destino,
                 notaMidi, amplitud);
         enviarComando(comando);

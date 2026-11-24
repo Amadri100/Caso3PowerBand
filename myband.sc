@@ -19,6 +19,12 @@
 */
 
 (
+Server.default = Server(
+    \powerband,
+    NetAddr("127.0.0.1", 57117)
+);
+
+
 ~myband = ();
 
 ~myband[\active] = Dictionary.new;   // midi note -> running organ synth
@@ -155,6 +161,7 @@
 			self.noteOn(60);                                   1.5.wait;
 			self.noteOn(64, [1, 2.01, 4], [1, 0.6, 0.3]);      1.5.wait;
 			self.noteOn(67, [1, 3, 5], [1, 0.4, 0.2]);         2.0.wait;
+
 			self.noteOff(60); self.noteOff(64); self.noteOff(67);
 			1.0.wait;
 			"myband: test done".postln;
@@ -163,5 +170,8 @@
 };
 )
 
+
 ~myband.load;
 ~myband.test;
+
+

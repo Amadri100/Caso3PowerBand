@@ -30,19 +30,11 @@ espera la sincronización antes de publicar el mensaje de carga.
 1. Abrir `myband.sc` en SuperCollider IDE.
 2. Evaluar el bloque de código entre paréntesis que define `~myband`, por
    ejemplo con `Ctrl+Enter` mientras el cursor está dentro del bloque.
-3. Antes de iniciar el servidor, seleccionar el puerto que usa PowerBand. El
-   valor predeterminado de `Configuraciones` es `57117`; SuperCollider usa
-   normalmente `57110` para el servidor local predeterminado. Para que el
-   servidor local reciba los mensajes del cliente con el puerto predeterminado,
-   evaluar primero:
-
-   ```supercollider
-   Server.default = Server(
-       \powerband,
-       NetAddr("127.0.0.1", 57117),
-       ServerOptions.new
-   );
-   ```
+3. El bloque selecciona `127.0.0.1:57117`, el destino predeterminado de
+   PowerBand. SuperCollider normalmente usa `57110`; si ya existe un servidor
+   iniciado en otro puerto, deténgalo antes de cargar el servidor seleccionado.
+   Si se cambia el puerto en PowerBand, ajuste también la dirección del
+   servidor en el bloque antes de evaluarlo.
 
 4. Evaluar `~myband.load;`. La función inicia el servidor si hace falta,
    registra los SynthDefs y espera `Server.default.sync`. Confirmar en la

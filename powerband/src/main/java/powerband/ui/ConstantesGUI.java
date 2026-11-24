@@ -18,12 +18,14 @@ public final class ConstantesGUI {
 
     public static final int ANCHO_BARRA_NAVEGACION = 230;
     public static final int ALTO_BOTON_NAVEGACION = 42;
-    public static final int ANCHO_MINIMO_VENTANA = 780;
-    public static final int ALTO_MINIMO_VENTANA = 540;
-    public static final int ANCHO_INICIAL_VENTANA = 1120;
-    public static final int ALTO_INICIAL_VENTANA = 760;
+    public static final int ANCHO_MINIMO_VENTANA = 900;
+    public static final int ALTO_MINIMO_VENTANA = 650;
+    public static final int ANCHO_INICIAL_VENTANA = 1300;
+    public static final int ALTO_INICIAL_VENTANA = 900;
     public static final int COLUMNAS_TARJETAS_INICIO = 2;
     public static final int COLUMNAS_CAMPO_CONFIGURACION = 20;
+    public static final int ANCHO_SUPERFICIE_TABLETA = 360;
+    public static final int ALTO_SUPERFICIE_TABLETA = 180;
 
     public static final int ESPACIADO_MENU = 4;
     public static final int ESPACIADO_MARCA_MENU = 28;

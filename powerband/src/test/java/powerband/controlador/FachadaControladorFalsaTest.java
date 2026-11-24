@@ -94,13 +94,15 @@ class FachadaControladorFalsaTest {
         fachada.registrarObservadorEstado(observadorErrores(errores));
 
         assertTrue(fachada.asignarDispositivo(
-                "piano", "gamepad-demo"));
+                "control", "gamepad-demo"));
+        assertFalse(fachada.asignarDispositivo(
+                "control", "lapiz-demo"));
         assertFalse(fachada.asignarDispositivo(
                 "instrumento-inexistente", "gamepad-demo"));
         assertTrue(fachada.asignarSintetizador(
-                "organo", IdSintetizador.ORGANO));
-        assertFalse(fachada.asignarSintetizador("organo", null));
-        assertEquals(2, errores.size());
+                "tableta", IdSintetizador.ORGANO));
+        assertFalse(fachada.asignarSintetizador("tableta", null));
+        assertEquals(3, errores.size());
     }
 
     @Test
@@ -163,7 +165,7 @@ class FachadaControladorFalsaTest {
         FachadaControladorFalsa fachada =
                 new FachadaControladorFalsa();
 
-        assertEquals(List.of("piano", "bajo", "organo"),
+        assertEquals(List.of("microfono", "control", "tableta"),
                 fachada.listarInstrumentos());
         assertEquals(List.of(
                 IdSintetizador.PIANO,
@@ -171,20 +173,20 @@ class FachadaControladorFalsaTest {
                 IdSintetizador.ORGANO),
                 fachada.listarSintetizadores());
         assertTrue(fachada.reemplazarSintetizadores(
-                "piano",
+                "control",
                 List.of(IdSintetizador.PIANO,
                         IdSintetizador.BAJO)));
         assertEquals(
                 List.of(IdSintetizador.PIANO,
                         IdSintetizador.BAJO),
-                fachada.sintetizadoresPorInstrumento().get("piano"));
+                fachada.sintetizadoresPorInstrumento().get("control"));
         assertFalse(fachada.reemplazarSintetizadores(
                 "instrumento-inexistente",
                 List.of(IdSintetizador.PIANO)));
         assertTrue(fachada.reemplazarSintetizadores(
-                "piano", List.of()));
+                "control", List.of()));
         assertEquals(List.of(),
-                fachada.sintetizadoresPorInstrumento().get("piano"));
+                fachada.sintetizadoresPorInstrumento().get("control"));
     }
 
     @Test

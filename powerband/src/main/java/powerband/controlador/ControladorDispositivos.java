@@ -9,9 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
+import powerband.util.DispositivoEntrada;
+import powerband.input.DisponibilidadDispositivo;
 import powerband.input.Entrada;
 import powerband.input.EntradaControl;
 import powerband.input.EntradaMicrofono;
@@ -28,6 +35,7 @@ import powerband.sintetizadores.OrganoSintetizador;
 import powerband.sintetizadores.PianoSintetizador;
 import powerband.sintetizadores.Sintetizador;
 import powerband.util.Configuraciones;
+import powerband.util.Constantes;
 
 final class ControladorDispositivos {
 
@@ -40,10 +48,21 @@ final class ControladorDispositivos {
     private final Map<String, Instrumento> instrumentos = new LinkedHashMap<>();
     private final Map<IdSintetizador, Sintetizador> sintetizadores;
     private final Object bloqueoAsignaciones = new Object();
+    private final Object bloqueoCambioDispositivo = new Object();
     private final Map<String, String> asignacionesDispositivo = new LinkedHashMap<>();
+    private final Map<String, Long> versionesDesconexion = new LinkedHashMap<>();
     private final Map<String, List<IdSintetizador>> asignacionesSintetizador =
             new LinkedHashMap<>();
-    private final Supplier<List<String>> proveedorDispositivos;
+    private final Function<String, List<DispositivoEntrada>> proveedorDispositivos;
+    private final boolean deteccionReal;
+    private final BiFunction<String, String, DisponibilidadDispositivo> comprobadorDisponibilidad;
+    private final Map<String, String> fallosComprobacion = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService monitor = Executors.newSingleThreadScheduledExecutor(tarea -> {
+        Thread hilo = new Thread(tarea, "monitor-dispositivos");
+        hilo.setDaemon(true);
+        return hilo;
+    });
+    private boolean monitorIniciado;
     private final BiConsumer<String, Throwable> notificarError;
     private volatile BandClient bandClient;
 
@@ -52,14 +71,31 @@ final class ControladorDispositivos {
             EntradaMicrofono entradaMicrofono, EntradaControl entradaControl,
             EntradaTableta entradaTableta,
             Map<IdSintetizador, Sintetizador> sintetizadores,
-            Supplier<List<String>> proveedorDispositivos,
+            Function<String, List<DispositivoEntrada>> proveedorDispositivos,
+            BiConsumer<String, Throwable> notificarError,
+            ObservadorDesconexion observadorDesconexion) {
+        this(microfono, control, tableta, entradaMicrofono, entradaControl, entradaTableta,
+                sintetizadores, proveedorDispositivos, null, notificarError, observadorDesconexion);
+    }
+
+    ControladorDispositivos(
+            Microfono microfono, Control control, Tableta tableta,
+            EntradaMicrofono entradaMicrofono, EntradaControl entradaControl,
+            EntradaTableta entradaTableta,
+            Map<IdSintetizador, Sintetizador> sintetizadores,
+            Function<String, List<DispositivoEntrada>> proveedorDispositivos,
+            BiFunction<String, String, DisponibilidadDispositivo> comprobadorDisponibilidad,
             BiConsumer<String, Throwable> notificarError,
             ObservadorDesconexion observadorDesconexion) {
         this.entradaMicrofono = Objects.requireNonNull(entradaMicrofono, "entradaMicrofono");
         this.entradaControl = Objects.requireNonNull(entradaControl, "entradaControl");
         this.entradaTableta = Objects.requireNonNull(entradaTableta, "entradaTableta");
         this.sintetizadores = Objects.requireNonNull(sintetizadores, "sintetizadores");
-        this.proveedorDispositivos = Objects.requireNonNull(proveedorDispositivos, "proveedorDispositivos");
+        this.deteccionReal = proveedorDispositivos == null;
+        this.proveedorDispositivos = proveedorDispositivos == null
+                ? this::detectarDispositivos : proveedorDispositivos;
+        this.comprobadorDisponibilidad = comprobadorDisponibilidad == null
+                ? this::comprobarDisponibilidad : comprobadorDisponibilidad;
         this.notificarError = Objects.requireNonNull(notificarError, "notificarError");
         instrumentos.put("microfono", Objects.requireNonNull(microfono, "microfono"));
         instrumentos.put("control", Objects.requireNonNull(control, "control"));
@@ -67,74 +103,265 @@ final class ControladorDispositivos {
         entradaMicrofono.registrarObservadorDesconexion(observadorDesconexion);
         entradaControl.registrarObservadorDesconexion(observadorDesconexion);
         entradaTableta.registrarObservadorDesconexion(observadorDesconexion);
+        entradaTableta.registrarObservadorRetiro(this::programarRetiroTableta);
     }
 
     List<String> listarDispositivos() {
-        return List.copyOf(Objects.requireNonNull(
-                proveedorDispositivos.get(), "La detección devolvió una lista nula"));
+        return listarDispositivos("control").stream()
+                .map(DispositivoEntrada::id).toList();
+    }
+
+    List<DispositivoEntrada> listarDispositivos(String instrumentoId) {
+        if (instrumentoId == null || !INSTRUMENTOS.contains(instrumentoId)) {
+            IllegalArgumentException fallo = new IllegalArgumentException("Instrumento no válido");
+            notificarError.accept(fallo.getMessage(), fallo);
+            throw fallo;
+        }
+        try {
+            return List.copyOf(Objects.requireNonNull(
+                    proveedorDispositivos.apply(instrumentoId),
+                    "La detección devolvió una lista nula"));
+        } catch (RuntimeException fallo) {
+            notificarError.accept("No se pudieron detectar los dispositivos", fallo);
+            throw fallo;
+        } catch (LinkageError fallo) {
+            IllegalStateException error = new IllegalStateException(
+                    "No se pudo cargar la biblioteca de dispositivos", fallo);
+            notificarError.accept(error.getMessage(), error);
+            throw error;
+        }
+    }
+
+    private List<DispositivoEntrada> detectarDispositivos(String instrumentoId) {
+        return switch (instrumentoId) {
+            case "control" -> EntradaControl.dispositivosCompatibles();
+            case "microfono" -> EntradaMicrofono.dispositivosCompatibles();
+            case "tableta" -> entradaTableta.dispositivosCompatibles();
+            default -> throw new IllegalArgumentException("Instrumento no válido");
+        };
+    }
+
+    java.awt.Component superficieTableta() {
+        return entradaTableta.superficie();
+    }
+
+    void establecerModoDescubrimientoTableta(boolean activo) {
+        entradaTableta.establecerModoDescubrimiento(activo);
     }
 
     boolean asignarDispositivo(String instrumentoId, String dispositivoId) {
-        if (!INSTRUMENTOS.contains(instrumentoId) || dispositivoId == null
-                || dispositivoId.isBlank()
-                || !EntradaControl.esDispositivoValido(dispositivoId)) {
+        if (instrumentoId == null || !INSTRUMENTOS.contains(instrumentoId) || dispositivoId == null
+                || dispositivoId.isBlank()) {
             return asignacionInvalida("Instrumento o dispositivo no válido");
         }
-        List<String> dispositivos;
+        List<DispositivoEntrada> disponibles;
         try {
-            dispositivos = listarDispositivos();
+            disponibles = listarDispositivos(instrumentoId);
         } catch (RuntimeException excepcion) {
-            notificarError.accept("No se pudieron detectar los dispositivos", excepcion);
             return false;
         }
-        if (!dispositivos.contains(dispositivoId)) {
+        if (disponibles.stream().noneMatch(dispositivo -> dispositivo.id().equals(dispositivoId))) {
             return asignacionInvalida("El dispositivo no está disponible");
         }
-
-        boolean dispositivoEnUso;
-        RuntimeException falloAplicacion = null;
-        synchronized (bloqueoAsignaciones) {
-            dispositivoEnUso = asignacionesDispositivo.entrySet().stream()
-                    .anyMatch(asignacion -> !asignacion.getKey().equals(instrumentoId)
-                            && asignacion.getValue().equals(dispositivoId));
-            if (!dispositivoEnUso) {
-                if ("control".equals(instrumentoId)) {
-                    String anterior = asignacionesDispositivo.get(instrumentoId);
-                    boolean reiniciar = entradaControl.estaActiva()
-                            && !dispositivoId.equals(anterior);
-                    try {
-                        entradaControl.seleccionarDispositivo(dispositivoId);
-                        if (reiniciar) {
-                            entradaControl.detener();
-                            entradaControl.iniciar();
-                        }
-                    } catch (RuntimeException excepcion) {
-                        if (anterior != null) {
-                            try {
-                                entradaControl.seleccionarDispositivo(anterior);
-                                if (reiniciar && !entradaControl.estaActiva()) {
-                                    entradaControl.iniciar();
-                                }
-                            } catch (RuntimeException falloRestauracion) {
-                                excepcion.addSuppressed(falloRestauracion);
-                            }
-                        }
-                        falloAplicacion = excepcion;
-                    }
-                }
-                if (falloAplicacion == null) {
-                    asignacionesDispositivo.put(instrumentoId, dispositivoId);
-                }
+        try {
+            if (deteccionReal && "control".equals(instrumentoId)
+                    && !EntradaControl.dispositivoDisponible(dispositivoId)) {
+                return asignacionInvalida("El control no responde o ya no está disponible");
             }
-        }
-        if (dispositivoEnUso) {
-            return asignacionInvalida("El dispositivo ya está asignado a otro instrumento");
-        }
-        if (falloAplicacion != null) {
-            notificarError.accept("No se pudo aplicar la asignación del dispositivo", falloAplicacion);
+        } catch (RuntimeException excepcion) {
+            notificarError.accept("No se pudo comprobar el control", excepcion);
             return false;
         }
-        return true;
+
+        synchronized (bloqueoCambioDispositivo) {
+            String anterior;
+            long version;
+            synchronized (bloqueoAsignaciones) {
+                boolean dispositivoEnUso = asignacionesDispositivo.entrySet().stream()
+                        .anyMatch(asignacion -> !asignacion.getKey().equals(instrumentoId)
+                                && asignacion.getValue().equals(dispositivoId));
+                if (dispositivoEnUso) {
+                    return asignacionInvalida("El dispositivo ya está asignado a otro instrumento");
+                }
+                anterior = asignacionesDispositivo.get(instrumentoId);
+                version = versionesDesconexion.getOrDefault(instrumentoId, 0L);
+            }
+            Entrada entrada = entrada(instrumentoId);
+            boolean reiniciar = entrada.estaActiva() && !dispositivoId.equals(anterior)
+                    && !"tableta".equals(instrumentoId);
+            try {
+                if (reiniciar) {
+                    entrada.detener();
+                }
+                synchronized (bloqueoAsignaciones) {
+                    if (versionesDesconexion.getOrDefault(instrumentoId, 0L) != version) {
+                        return asignacionInvalida("La entrada se desconectó durante la asignación");
+                    }
+                    seleccionar(instrumentoId, dispositivoId);
+                }
+                if (reiniciar) {
+                    entrada.iniciar();
+                }
+                synchronized (bloqueoAsignaciones) {
+                    if (versionesDesconexion.getOrDefault(instrumentoId, 0L) != version) {
+                        return asignacionInvalida("La entrada se desconectó durante la asignación");
+                    }
+                    asignacionesDispositivo.put(instrumentoId, dispositivoId);
+                    versionesDesconexion.merge(instrumentoId, 1L, Long::sum);
+                }
+                iniciarMonitor();
+                return true;
+            } catch (RuntimeException excepcion) {
+                synchronized (bloqueoAsignaciones) {
+                    if (versionesDesconexion.getOrDefault(instrumentoId, 0L) == version) {
+                        try {
+                            if (anterior == null) {
+                                limpiarSeleccion(instrumentoId);
+                            } else {
+                                seleccionar(instrumentoId, anterior);
+                            }
+                            if (reiniciar && !entrada.estaActiva()) {
+                                entrada.iniciar();
+                            }
+                        } catch (RuntimeException falloRestauracion) {
+                            excepcion.addSuppressed(falloRestauracion);
+                        }
+                    }
+                }
+                notificarError.accept("No se pudo aplicar la asignación del dispositivo", excepcion);
+                return false;
+            }
+        }
+    }
+
+    private Entrada entrada(String instrumentoId) {
+        return switch (instrumentoId) {
+            case "control" -> entradaControl;
+            case "microfono" -> entradaMicrofono;
+            case "tableta" -> entradaTableta;
+            default -> throw new IllegalArgumentException("Instrumento no válido");
+        };
+    }
+
+    private synchronized void iniciarMonitor() {
+        if (deteccionReal && !monitorIniciado) {
+            monitor.scheduleWithFixedDelay(this::ejecutarMonitor,
+                    Constantes.INTERVALO_COMPROBACION_DISPOSITIVOS_SEGUNDOS,
+                    Constantes.INTERVALO_COMPROBACION_DISPOSITIVOS_SEGUNDOS, TimeUnit.SECONDS);
+            monitorIniciado = true;
+        }
+    }
+
+    private void ejecutarMonitor() {
+        try {
+            verificarDesconexiones();
+        } catch (RuntimeException | LinkageError fallo) {
+            informarFalloComprobacion("monitor", fallo);
+        }
+    }
+
+    void verificarDesconexiones() {
+        Map<String, AsignacionVigilada> copia = new LinkedHashMap<>();
+        synchronized (bloqueoAsignaciones) {
+            asignacionesDispositivo.forEach((instrumento, id) ->
+                    copia.put(instrumento, new AsignacionVigilada(
+                            id, versionesDesconexion.getOrDefault(instrumento, 0L))));
+        }
+        copia.forEach((instrumento, asignacion) -> {
+            if ("tableta".equals(instrumento)
+                    || ("control".equals(instrumento) && entradaControl.estaActiva())) {
+                return;
+            }
+            try {
+                DisponibilidadDispositivo disponibilidad = Objects.requireNonNull(
+                        comprobadorDisponibilidad.apply(instrumento, asignacion.id()),
+                        "La comprobación de disponibilidad devolvió null");
+                if (disponibilidad == DisponibilidadDispositivo.AMBIGUO) {
+                    informarFalloComprobacion(instrumento,
+                            new IllegalStateException("La identidad del dispositivo es ambigua"));
+                } else {
+                    fallosComprobacion.remove(instrumento);
+                    if (disponibilidad == DisponibilidadDispositivo.NO_DISPONIBLE) {
+                        retirarSiVigente(instrumento, asignacion);
+                    }
+                }
+            } catch (RuntimeException | LinkageError fallo) {
+                informarFalloComprobacion(instrumento, fallo);
+            }
+        });
+    }
+
+    private DisponibilidadDispositivo comprobarDisponibilidad(String instrumento, String id) {
+        return switch (instrumento) {
+            case "control" -> EntradaControl.comprobarDisponibilidad(id);
+            case "microfono" -> EntradaMicrofono.comprobarDisponibilidad(id);
+            default -> throw new IllegalArgumentException("La entrada no admite comprobación periódica");
+        };
+    }
+
+    private void informarFalloComprobacion(String instrumento, Throwable fallo) {
+        String detalle = fallo.toString();
+        if (!detalle.equals(fallosComprobacion.put(instrumento, detalle))) {
+            notificarError.accept("No se pudo comprobar la disponibilidad de " + instrumento, fallo);
+        }
+    }
+
+    private void programarRetiroTableta(String id) {
+        AsignacionVigilada asignacion;
+        synchronized (bloqueoAsignaciones) {
+            if (!id.equals(asignacionesDispositivo.get("tableta"))) {
+                return;
+            }
+            asignacion = new AsignacionVigilada(id,
+                    versionesDesconexion.getOrDefault("tableta", 0L));
+        }
+        monitor.execute(() -> {
+            try {
+                retirarSiVigente("tableta", asignacion);
+            } catch (RuntimeException fallo) {
+                notificarError.accept("No se pudo procesar el retiro de la tableta", fallo);
+            }
+        });
+    }
+
+    private void retirarSiVigente(String instrumento, AsignacionVigilada asignacion) {
+        synchronized (bloqueoCambioDispositivo) {
+            synchronized (bloqueoAsignaciones) {
+                if (!asignacion.id().equals(asignacionesDispositivo.get(instrumento))
+                        || asignacion.version() != versionesDesconexion.getOrDefault(instrumento, 0L)) {
+                    return;
+                }
+            }
+            entrada(instrumento).detener();
+            synchronized (bloqueoAsignaciones) {
+                if (!asignacion.id().equals(asignacionesDispositivo.get(instrumento))
+                        || asignacion.version() != versionesDesconexion.getOrDefault(instrumento, 0L)) {
+                    return;
+                }
+            }
+            entrada(instrumento).desconectar("el dispositivo ya no está disponible");
+        }
+    }
+
+    private record AsignacionVigilada(String id, long version) {
+    }
+
+    private void seleccionar(String instrumentoId, String dispositivoId) {
+        switch (instrumentoId) {
+            case "control" -> entradaControl.seleccionarDispositivo(dispositivoId);
+            case "microfono" -> entradaMicrofono.seleccionarDispositivo(dispositivoId);
+            case "tableta" -> entradaTableta.seleccionarDispositivo(dispositivoId);
+            default -> throw new IllegalArgumentException("Instrumento no válido");
+        }
+    }
+
+    private void limpiarSeleccion(String instrumentoId) {
+        switch (instrumentoId) {
+            case "control" -> entradaControl.limpiarDispositivoSeleccionado();
+            case "microfono" -> entradaMicrofono.limpiarDispositivoSeleccionado();
+            case "tableta" -> entradaTableta.limpiarDispositivoSeleccionado();
+            default -> throw new IllegalArgumentException("Instrumento no válido");
+        }
     }
 
     boolean asignarSintetizador(String instrumentoId, IdSintetizador sintetizadorId) {
@@ -245,9 +472,8 @@ final class ControladorDispositivos {
     void retirarDispositivo(String nombre) {
         synchronized (bloqueoAsignaciones) {
             asignacionesDispositivo.remove(nombre);
-            if ("control".equals(nombre)) {
-                entradaControl.limpiarDispositivoSeleccionado();
-            }
+            limpiarSeleccion(nombre);
+            versionesDesconexion.merge(nombre, 1L, Long::sum);
         }
     }
 

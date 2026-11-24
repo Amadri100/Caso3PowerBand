@@ -50,6 +50,10 @@ public final class Constantes {
     public static final double PRESION_MAXIMA = 1.0;
     public static final int TAMANO_BUFFER_AUDIO = 1024;
     public static final int SUPERPOSICION_AUDIO = 0;
+    public static final float FRECUENCIA_MUESTREO_AUDIO = 44100.0f;
+    public static final int BITS_MUESTRA_AUDIO = 16;
+    public static final int CANALES_AUDIO = 1;
+    public static final int INTERVALO_COMPROBACION_DISPOSITIVOS_SEGUNDOS = 2;
 
     public static final int[] SINTETIZADORES_INDICES = {1,2,3}; //Piano, bajo, organo
 
