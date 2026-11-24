@@ -110,6 +110,7 @@ class DispositivosCompatiblesTest {
             assertEquals(List.of(List.of(0.25, 0.5, 0.5)), muestras);
         } finally {
             entrada.detener();
+            entrada.close();
         }
     }
 
@@ -131,6 +132,7 @@ class DispositivosCompatiblesTest {
         entrada.procesarEvento(new Component[] {eje, boton}, boton, 1.0f);
 
         assertEquals(List.of(List.of(0.0, 0.0), List.of(1.0, 1.0)), muestras);
+        entrada.close();
     }
 
     private static Component componente(boolean analogico) {

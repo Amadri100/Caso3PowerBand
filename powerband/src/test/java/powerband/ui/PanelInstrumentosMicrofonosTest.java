@@ -16,11 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class PanelInstrumentosMicrofonosTest {
 
     @Test
+    @SuppressWarnings("unused")
     void elSelectorDeMicrofonosMuestraDispositivosCompatibles() {
         FachadaControlador controlador = new FachadaControladorFalsa();
         PanelInstrumentos panel = new PanelInstrumentos(controlador, error -> {
             System.err.println("Error: " + error);
         });
+        
 
         List<DispositivoEntrada> microfonos = controlador.listarDispositivos("microfono");
         System.out.println("Microfonos disponibles: " + microfonos.size());

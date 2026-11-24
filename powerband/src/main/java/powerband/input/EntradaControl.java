@@ -190,7 +190,7 @@ public class EntradaControl extends Entrada {
     @Override
     protected void ejecutarCaptura() throws Exception {
         Controller actual = buscarDispositivo();
-        dispositivo = actual;
+        this.dispositivo = actual;
         if (actual == null) {
             throw new IllegalStateException(
                     "No se encontro el dispositivo de control configurado");

@@ -59,9 +59,12 @@ class EntradaTest {
         } finally {
             primera.detener();
             segunda.detener();
+
         }
         assertFalse(segunda.estaActiva());
         assertEquals(1, segunda.recursosLiberados.get());
+        primera.close();
+        segunda.close();
     }
 
     @Test
@@ -70,6 +73,7 @@ class EntradaTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> entrada.validarPublico(2.0, 0.0, 1.0));
+        entrada.close();
     }
 
     @Test
@@ -96,6 +100,8 @@ class EntradaTest {
         } finally {
             afectada.detener();
             operativa.detener();
+            afectada.close();
+            operativa.close();
         }
     }
 
@@ -118,6 +124,7 @@ class EntradaTest {
 
         assertTrue(notificacion.await(1, TimeUnit.SECONDS));
         assertSame(causaOriginal, causaNotificada.get());
+        entrada.close();
     }
 
     @Test
@@ -132,6 +139,7 @@ class EntradaTest {
                 carpetaTemporal.resolve("powerband.log"));
         assertTrue(log.contains("[error]"));
         assertTrue(log.contains("frecuencia=10.0"));
+        microfono.close();
     }
 
     @Test
@@ -144,6 +152,7 @@ class EntradaTest {
         assertThrows(IllegalArgumentException.class,
                 () -> tableta.normalizarPosicion(
                         Double.NEGATIVE_INFINITY, 0.0, 0.5));
+        tableta.close();                
     }
 
     private static final class EntradaDePrueba extends Entrada {

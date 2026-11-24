@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import powerband.util.DispositivoEntrada;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EntradaTableroDeteccionTest {
 
@@ -38,6 +37,7 @@ public class EntradaTableroDeteccionTest {
         } finally {
             frame.setVisible(false);
             frame.dispose();
+            entrada.close();
         }
     }
 }
