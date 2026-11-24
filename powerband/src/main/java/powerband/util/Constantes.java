@@ -1,6 +1,7 @@
 package powerband.util;
 
 import java.nio.ByteOrder;
+import java.util.List;
 
 public final class Constantes {
 
@@ -29,6 +30,13 @@ public final class Constantes {
     public static final int NOTA_MIDI_MAXIMA = 127;
     public static final int DURACION_MINIMA_MS = 1;
     public static final int DURACION_MAXIMA_MS = Integer.MAX_VALUE;
+    public static final int DURACION_NOTA_TONO_CONEXION_MS = 300;
+    public static final List<Integer> NOTAS_PIANO_TONO_CONEXION =
+            List.of(60, 64);
+    public static final List<Integer> NOTAS_BAJO_TONO_CONEXION =
+            List.of(48, 52);
+    public static final List<Integer> NOTAS_ORGANO_TONO_CONEXION =
+            List.of(67, 72);
     public static final int TERCERA_MENOR_SEMITONOS = 3;
     public static final int TERCERA_MAYOR_SEMITONOS = 4;
     public static final int CANTIDAD_PARCIALES_ORGANO = 3;

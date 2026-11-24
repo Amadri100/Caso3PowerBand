@@ -77,6 +77,29 @@ public class BandClient implements AutoCloseable {
                 "note", note,
                 "durMs", durMs);
     }
+    // Para poder "escuchar" la conexion el sistema manda un tono 
+    // Si no se escucha el tono no hubo conexion
+    public void playConnectionTone() throws IOException {
+        for (int indice = 0;
+                indice < Constantes.NOTAS_PIANO_TONO_CONEXION.size();
+                indice++) {
+            playPiano(
+                    Constantes.NOTAS_PIANO_TONO_CONEXION.get(indice),
+                    Constantes.DURACION_NOTA_TONO_CONEXION_MS);
+            esperarNotaTonoConexion();
+
+            playBass(
+                    Constantes.NOTAS_BAJO_TONO_CONEXION.get(indice),
+                    Constantes.DURACION_NOTA_TONO_CONEXION_MS);
+            esperarNotaTonoConexion();
+
+            int notaOrgano =
+                    Constantes.NOTAS_ORGANO_TONO_CONEXION.get(indice);
+            noteOn(notaOrgano);
+            esperarNotaTonoConexion();
+            noteOff(notaOrgano);
+        }
+    }
 
     /** 70's organ with default partials (1, 2, 3) and amplitudes. */
     public void noteOn(int note) throws IOException {
@@ -192,6 +215,16 @@ public class BandClient implements AutoCloseable {
         out.write(b, 0, b.length);
         int pad = 4 - (b.length % 4); // always adds at least the terminating null
         for (int i = 0; i < pad; i++) out.write(0);
+    }
+
+    private static void esperarNotaTonoConexion() throws IOException {
+        try {
+            Thread.sleep(Constantes.DURACION_NOTA_TONO_CONEXION_MS);
+        } catch (InterruptedException excepcion) {
+            Thread.currentThread().interrupt();
+            throw new IOException(
+                    "Se interrumpió el tono de verificación", excepcion);
+        }
     }
 
     @Override

@@ -437,6 +437,9 @@ final class ControladorDispositivos {
         entradaMicrofono.iniciar();
         entradaControl.iniciar();
         entradaTableta.iniciar();
+        if (bandClient != null) {
+            bandClient.playConnectionTone();
+        }
     }
 
     private void asegurarSintetizadores() throws IOException {
