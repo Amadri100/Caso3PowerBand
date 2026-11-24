@@ -4,6 +4,7 @@ import powerband.comandos.BusComandos;
 import powerband.comandos.Comando;
 import powerband.comandos.ComandoPuntual;
 import powerband.sintetizadores.Sintetizador;
+import powerband.util.Constantes;
 
 public class Control extends Instrumento {
 
@@ -29,12 +30,30 @@ public class Control extends Instrumento {
             throw new IllegalArgumentException(
                     "El evento del control debe contener valores finitos");
         }
-        Comando comando = new ComandoPuntual(destino, eje, valor);
+        validarValorNormalizado("eje", eje);
+        validarValorNormalizado("valor", valor);
+        int nota = (int) Math.round(
+                eje * Constantes.NOTA_MIDI_MAXIMA);
+        int duracionMs = Math.max(
+                Constantes.DURACION_MINIMA_MS,
+                (int) Math.round(
+                        valor * Constantes.DURACION_MAXIMA_CONTROL_MS));
+        Comando comando = new ComandoPuntual(
+                destino, nota, duracionMs);
         enviarComando(comando);
         return comando;
     }
 
     public Comando procesarEvento(double eje, double valor) {
         return convertirEvento(eje, valor);
+    }
+
+    private static void validarValorNormalizado(
+            String nombre, double valor) {
+        if (valor < Constantes.VALOR_MUSICAL_MINIMO
+                || valor > Constantes.VALOR_MUSICAL_MAXIMO) {
+            throw new IllegalArgumentException(
+                    "El " + nombre + " del control debe estar entre 0 y 1");
+        }
     }
 }

@@ -14,6 +14,7 @@ import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,7 +93,7 @@ class InstrumentoTest {
 
         microfono.convertirFrecuencia(440.0, 0.5);
         control.convertirEvento(0.25, 0.75);
-        tableta.convertirPosicion(100.0, 200.0, 0.8);
+        tableta.convertirPosicion(0.1, 0.2, 0.8);
 
         assertEquals(1, microfono.sintetizadores().size());
         assertEquals(1, control.sintetizadores().size());
@@ -100,6 +101,71 @@ class InstrumentoTest {
         assertEquals(69.0, microfono.frecuenciaAMidi(440.0));
         assertThrows(IllegalArgumentException.class,
                 () -> microfono.frecuenciaAMidi(0.0));
+    }
+
+    @Test
+    void convierteMicrofonoYTabletaAParametrosPuntualesComunes() {
+        SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
+        Microfono microfono = new Microfono(sintetizador);
+        Tableta tableta = new Tableta(sintetizador);
+
+        microfono.convertirFrecuencia(440.0, 0.5);
+        assertArrayEquals(new double[] {69.0, 300.0},
+                sintetizador.parametros);
+
+        tableta.convertirPosicion(0.8, 0.25, 0.7);
+        assertArrayEquals(new double[] {102.0, 300.0},
+                sintetizador.parametros);
+    }
+
+    @Test
+    void rechazaEventosDeMicrofonoYTabletaFueraDeRango() {
+        Microfono microfono =
+                new Microfono(new SintetizadorDePrueba());
+        Tableta tableta =
+                new Tableta(new SintetizadorDePrueba());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> microfono.convertirFrecuencia(20000.0, 0.5));
+        assertThrows(IllegalArgumentException.class,
+                () -> microfono.convertirFrecuencia(440.0, 1.1));
+        assertThrows(IllegalArgumentException.class,
+                () -> tableta.convertirPosicion(1.1, 0.5, 0.5));
+    }
+
+    @Test
+    void convierteValoresNormalizadosDelControlAParametrosMusicales() {
+        SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
+        Control control = new Control(sintetizador);
+
+        control.convertirEvento(0.5, 0.499997118164);
+
+        assertEquals(64.0, sintetizador.parametros[0]);
+        assertEquals(500.0, sintetizador.parametros[1]);
+    }
+
+    @Test
+    void mantieneParametrosDelControlEnRangoEnLosExtremos() {
+        SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
+        Control control = new Control(sintetizador);
+
+        control.convertirEvento(0.0, 0.0);
+        assertEquals(0.0, sintetizador.parametros[0]);
+        assertEquals(1.0, sintetizador.parametros[1]);
+
+        control.convertirEvento(1.0, 1.0);
+        assertEquals(127.0, sintetizador.parametros[0]);
+        assertEquals(1000.0, sintetizador.parametros[1]);
+    }
+
+    @Test
+    void rechazaValoresDelControlFueraDelRangoNormalizado() {
+        Control control = new Control(new SintetizadorDePrueba());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> control.convertirEvento(-0.1, 0.5));
+        assertThrows(IllegalArgumentException.class,
+                () -> control.convertirEvento(0.5, 1.1));
     }
 
     private static final class InstrumentoDePrueba extends Instrumento {

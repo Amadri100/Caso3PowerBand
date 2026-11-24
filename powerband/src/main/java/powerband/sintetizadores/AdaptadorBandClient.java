@@ -93,7 +93,7 @@ abstract class AdaptadorBandClient implements Sintetizador {
         throw error;
     }
 
-    private static void registrarError(RuntimeException error) {
+    protected final void registrarError(RuntimeException error) {
         try {
             LoggerPowerBand.getInstance().registrarError(error.getMessage());
         } catch (IllegalStateException falloLog) {

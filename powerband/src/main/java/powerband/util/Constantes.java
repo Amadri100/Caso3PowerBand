@@ -30,7 +30,11 @@ public final class Constantes {
     public static final int NOTA_MIDI_MAXIMA = 127;
     public static final int DURACION_MINIMA_MS = 1;
     public static final int DURACION_MAXIMA_MS = Integer.MAX_VALUE;
+    public static final int DURACION_MAXIMA_CONTROL_MS = 1000;
+    public static final int DURACION_NOTA_ENTRADA_MS = 300;
     public static final int DURACION_NOTA_TONO_CONEXION_MS = 300;
+    public static final String NOMBRE_HILO_NOTAS_ORGANO =
+            "powerband-organo-notas";
     public static final List<Integer> NOTAS_PIANO_TONO_CONEXION =
             List.of(60, 64);
     public static final List<Integer> NOTAS_BAJO_TONO_CONEXION =

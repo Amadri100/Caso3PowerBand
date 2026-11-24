@@ -142,9 +142,9 @@ class CicloGrabacionReproduccionTest {
 
         assertEquals(List.of(TipoAccion.PUNTUAL, TipoAccion.PUNTUAL),
                 sintetizador.accionesEjecutadas);
-        assertArrayEquals(new double[] {69.0, 0.4},
+        assertArrayEquals(new double[] {69.0, 300.0},
                 sintetizador.parametrosPorEjecucion.get(0));
-        assertArrayEquals(new double[] {81.0, 0.8},
+        assertArrayEquals(new double[] {81.0, 300.0},
                 sintetizador.parametrosPorEjecucion.get(1));
 
         new FinalizadorGrabacion(
@@ -172,9 +172,9 @@ class CicloGrabacionReproduccionTest {
 
         assertEquals(List.of(TipoAccion.PUNTUAL, TipoAccion.PUNTUAL),
                 sintetizador.accionesEjecutadas);
-        assertArrayEquals(new double[] {69.0, 0.4},
+        assertArrayEquals(new double[] {69.0, 300.0},
                 sintetizador.parametrosPorEjecucion.get(0));
-        assertArrayEquals(new double[] {81.0, 0.8},
+        assertArrayEquals(new double[] {81.0, 300.0},
                 sintetizador.parametrosPorEjecucion.get(1));
     }
 

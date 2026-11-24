@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import powerband.comandos.TipoAccion;
 import powerband.excepciones.FalloTransporteException;
+import powerband.instrumentos.Control;
+import powerband.instrumentos.Microfono;
+import powerband.instrumentos.Tableta;
 import powerband.logging.LoggerPowerBand;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -78,6 +82,90 @@ class AdaptadoresSintetizadorTest {
                 cliente.razonesOrgano.get(1));
         assertArrayEquals(new float[] {1, 0.6f, 0.3f},
                 cliente.amplitudesOrgano.get(1));
+    }
+
+    @Test
+    void losNueveParesInstrumentoSintetizadorUsanParametrosCompatibles() {
+        ProgramadorNotasFalso programador = new ProgramadorNotasFalso();
+        PianoSintetizador piano = new PianoSintetizador(cliente);
+        BajoSintetizador bajo = new BajoSintetizador(cliente);
+        OrganoSintetizador organo = new OrganoSintetizador(
+                cliente, () -> programador);
+        List<Sintetizador> sintetizadores = List.of(piano, bajo, organo);
+
+        for (Sintetizador sintetizador : sintetizadores) {
+            new Microfono(sintetizador).convertirFrecuencia(440.0, 0.5);
+            new Control(sintetizador).convertirEvento(0.5, 0.5);
+            new Tableta(sintetizador).convertirPosicion(0.8, 0.25, 0.7);
+        }
+
+        List<NotaPiano> notasEsperadas = List.of(
+                new NotaPiano(69, 300, true),
+                new NotaPiano(64, 500, true),
+                new NotaPiano(102, 300, true));
+        assertEquals(notasEsperadas, cliente.notasPiano);
+        assertEquals(List.of(
+                new NotaBajo(69, 300),
+                new NotaBajo(64, 500),
+                new NotaBajo(102, 300)), cliente.notasBajo);
+        assertEquals(List.of(69, 64, 102), cliente.notasOrgano);
+        assertEquals(List.of(300L, 500L, 300L), programador.demoras());
+
+        programador.ejecutarTarea(0);
+        programador.ejecutarTarea(1);
+        programador.ejecutarTarea(2);
+        assertEquals(List.of(69, 64, 102), cliente.notasFinalizadas);
+        assertTrue(programador.cierres > 0);
+    }
+
+    @Test
+    void vencimientoAnteriorNoFinalizaUnaNotaReiniciada() {
+        ProgramadorNotasFalso programador = new ProgramadorNotasFalso();
+        OrganoSintetizador organo = new OrganoSintetizador(
+                cliente, () -> programador);
+
+        organo.ejecutar(TipoAccion.PUNTUAL, 60, 10);
+        organo.ejecutar(TipoAccion.PUNTUAL, 60, 20);
+        assertEquals(List.of(60), cliente.notasFinalizadas);
+
+        programador.ejecutarTarea(0);
+        assertEquals(List.of(60), cliente.notasFinalizadas);
+
+        programador.ejecutarTarea(1);
+        assertEquals(List.of(60, 60), cliente.notasFinalizadas);
+    }
+
+    @Test
+    void liberarTodasCancelaVencimientosPendientes() {
+        ProgramadorNotasFalso programador = new ProgramadorNotasFalso();
+        OrganoSintetizador organo = new OrganoSintetizador(
+                cliente, () -> programador);
+
+        organo.ejecutar(TipoAccion.PUNTUAL, 60, 50);
+        organo.ejecutar(TipoAccion.PUNTUAL, 64, 50);
+        organo.liberarTodasLasNotas();
+        programador.ejecutarTodasLasTareas();
+
+        assertEquals(Set.of(60, 64), Set.copyOf(cliente.notasFinalizadas));
+        assertEquals(2, cliente.notasFinalizadas.size());
+        assertTrue(programador.tareas.stream()
+                .allMatch(tarea -> tarea.cancelada));
+        assertEquals(1, programador.cierres);
+    }
+
+    @Test
+    void siFallaLaProgramacionFinalizaLaNotaYPropagaElError() {
+        ProgramadorNotasFalso programador = new ProgramadorNotasFalso();
+        programador.fallarProgramacion = true;
+        OrganoSintetizador organo = new OrganoSintetizador(
+                cliente, () -> programador);
+
+        assertThrows(IllegalStateException.class,
+                () -> organo.ejecutar(TipoAccion.PUNTUAL, 60, 50));
+
+        assertEquals(List.of(60), cliente.notasOrgano);
+        assertEquals(List.of(60), cliente.notasFinalizadas);
+        assertEquals(1, programador.cierres);
     }
 
     @Test
@@ -156,6 +244,59 @@ class AdaptadoresSintetizadorTest {
     }
 
     private record NotaBajo(int nota, int duracion) {
+    }
+
+    private static final class ProgramadorNotasFalso
+            implements OrganoSintetizador.ProgramadorNotas {
+
+        private final List<TareaFalsa> tareas = new ArrayList<>();
+        private boolean fallarProgramacion;
+        private int cierres;
+
+        @Override
+        public OrganoSintetizador.TareaProgramada programar(
+                Runnable tarea, long demoraMs) {
+            if (fallarProgramacion) {
+                throw new IllegalStateException("fallo programador");
+            }
+            tareas.add(new TareaFalsa(tarea, demoraMs));
+            return tareas.get(tareas.size() - 1);
+        }
+
+        @Override
+        public void cerrar() {
+            cierres++;
+        }
+
+        private List<Long> demoras() {
+            return tareas.stream().map(tarea -> tarea.demoraMs).toList();
+        }
+
+        private void ejecutarTarea(int indice) {
+            tareas.get(indice).tarea.run();
+        }
+
+        private void ejecutarTodasLasTareas() {
+            tareas.forEach(tarea -> tarea.tarea.run());
+        }
+    }
+
+    private static final class TareaFalsa
+            implements OrganoSintetizador.TareaProgramada {
+
+        private final Runnable tarea;
+        private final long demoraMs;
+        private boolean cancelada;
+
+        private TareaFalsa(Runnable tarea, long demoraMs) {
+            this.tarea = tarea;
+            this.demoraMs = demoraMs;
+        }
+
+        @Override
+        public void cancelar() {
+            cancelada = true;
+        }
     }
 
     private static final class ClienteBandPrueba extends BandClient {
