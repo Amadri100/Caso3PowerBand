@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 import powerband.excepciones.ArchivoException;
 import powerband.excepciones.CantidadInesperadaException;
@@ -50,21 +52,21 @@ public final class ListaGrabaciones {
             rutaTemporal = null;
         } catch (ArchivoException excepcion) {
             eliminarTemporal(rutaTemporal, excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    excepcion.getMessage(), ruta.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    excepcion.getMessage(), ruta.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         } catch (IOException excepcion) {
             ArchivoException fallo = ArchivoException.errorES(
                     ruta.toString(), "agregar una grabación",
                     excepcion);
             eliminarTemporal(rutaTemporal, fallo);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    fallo.getMessage(), ruta.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    fallo.getMessage(), ruta.toString(), OrigenLog.ARCHIVOS, fallo));
             throw fallo;
         } catch (RuntimeException excepcion) {
             eliminarTemporal(rutaTemporal, excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    excepcion.getMessage(), ruta.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    excepcion.getMessage(), ruta.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         }
     }

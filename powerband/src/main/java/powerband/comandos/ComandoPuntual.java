@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.Sintetizador;
 
 public final class ComandoPuntual implements Comando {
@@ -30,7 +32,7 @@ public final class ComandoPuntual implements Comando {
     @Override
     public void ejecutar() {
         destino.ejecutar(TipoAccion.PUNTUAL, parametros());
-        LoggerPowerBand.getInstance().registrarComando(this);
+        LoggerPowerBand.getInstance().registrar(Log.comando(this, OrigenLog.COMANDOS));
     }
 
     @Override

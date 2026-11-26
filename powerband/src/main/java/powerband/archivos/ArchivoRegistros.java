@@ -12,6 +12,8 @@ import powerband.excepciones.ArchivoException;
 import powerband.excepciones.ArchivoIncompletoException;
 import powerband.excepciones.ArgumentoInvalidoException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 //Permite facilitar las operaciones con archivos y hacerlo de forma flexible
 public final class ArchivoRegistros<T> implements AutoCloseable {
@@ -46,8 +48,8 @@ public final class ArchivoRegistros<T> implements AutoCloseable {
             return tamanoArchivo / tamanoRegistro;
         } catch (ArchivoException | ArgumentoInvalidoException excepcion) {
             if (excepcion instanceof ArchivoException) {
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
-                        excepcion.getMessage(), ruta.toString());
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                        excepcion.getMessage(), ruta.toString(), OrigenLog.ARCHIVOS, excepcion));
             }
             throw excepcion;
         } catch (IOException excepcion) {

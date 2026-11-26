@@ -27,6 +27,8 @@ import powerband.excepciones.ArchivoException;
 import powerband.excepciones.ArchivoIncompletoException;
 import powerband.excepciones.NombreDuplicadoException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 
 public final class FinalizadorGrabacion {
@@ -316,9 +318,9 @@ public final class FinalizadorGrabacion {
                         temporal.toString(),
                         "eliminar un respaldo temporal",
                         excepcion);
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         fallo.getMessage(),
-                        temporal.toString());
+                        temporal.toString(), OrigenLog.GRABACIONES, fallo));
             }
         }
     }

@@ -12,6 +12,8 @@ import javax.swing.WindowConstants;
 
 import powerband.controlador.FachadaControlador;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public final class VentanaPrincipal extends JFrame {
 
@@ -111,8 +113,8 @@ public final class VentanaPrincipal extends JFrame {
     }
 
     private static void registrarFallo(Throwable fallo) {
-        LoggerPowerBand.getInstance().registrarError(
+        LoggerPowerBand.getInstance().registrar(Log.error(
                 "Fallo al cerrar PowerBand mediante el controlador: "
-                        + fallo);
+                        + fallo, OrigenLog.UI, fallo));
     }
 }

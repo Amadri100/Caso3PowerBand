@@ -19,6 +19,8 @@ import javax.swing.SwingWorker;
 import powerband.controlador.FachadaControlador;
 import powerband.excepciones.NombreDuplicadoException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public final class PanelGrabacion extends JPanel {
 
@@ -138,11 +140,15 @@ public final class PanelGrabacion extends JPanel {
             return Boolean.TRUE;
         }, finalizada -> {
             if (!finalizada) {
+                LoggerPowerBand.getInstance().registrar(Log.error(
+                        "Nombre duplicado de grabación: " + nombre, OrigenLog.UI, null));
                 avisadorDuplicado.accept(nombre);
                 solicitarDetencion();
             }
         }, fallo -> {
             if (fallo instanceof NombreDuplicadoException) {
+                LoggerPowerBand.getInstance().registrar(Log.error(
+                        "Nombre duplicado de grabación: " + nombre, OrigenLog.UI, fallo));
                 avisadorDuplicado.accept(nombre);
             } else {
                 manejadorErrores.accept(fallo);
@@ -216,7 +222,8 @@ public final class PanelGrabacion extends JPanel {
     }
 
     private static void registrarError(Throwable fallo) {
-        LoggerPowerBand.getInstance().registrarError(
-                "Fallo en una operación del panel de grabación: " + fallo);
+        LoggerPowerBand.getInstance().registrar(Log.error(
+                "Fallo en una operación del panel de grabación: " + fallo,
+                OrigenLog.UI, fallo));
     }
 }

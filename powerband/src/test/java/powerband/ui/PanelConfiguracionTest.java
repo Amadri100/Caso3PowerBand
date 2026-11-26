@@ -14,6 +14,9 @@ import javax.swing.SwingUtilities;
 import org.junit.jupiter.api.Test;
 
 import powerband.controlador.FachadaControlador;
+import powerband.controlador.FachadaControladorFalsa;
+import powerband.util.Configuraciones;
+import powerband.util.Constantes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -23,6 +26,27 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PanelConfiguracionTest {
+
+    @Test
+    void activaYDesactivaDebugMedianteLaFachada() throws Exception {
+        Configuraciones configuraciones = Configuraciones.getInstance();
+        configuraciones.setOpcion(Constantes.OPCION_DEBUG_LOG, false);
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                PanelConfiguracion panel = new PanelConfiguracion(new FachadaControladorFalsa());
+                JCheckBox editor = (JCheckBox) panel.editorOpcion(Constantes.OPCION_DEBUG_LOG);
+                assertTrue(!editor.isSelected());
+                editor.setSelected(true);
+                panel.botonGuardar(Constantes.OPCION_DEBUG_LOG).doClick();
+                assertEquals(Boolean.TRUE, configuraciones.getOpcion(Constantes.OPCION_DEBUG_LOG));
+                editor.setSelected(false);
+                panel.botonGuardar(Constantes.OPCION_DEBUG_LOG).doClick();
+                assertEquals(Boolean.FALSE, configuraciones.getOpcion(Constantes.OPCION_DEBUG_LOG));
+            });
+        } finally {
+            configuraciones.setOpcion(Constantes.OPCION_DEBUG_LOG, false);
+        }
+    }
 
     @Test
     void muestraEstadoVacioSinEscribirOpcionesAlConstruirse()

@@ -19,6 +19,8 @@ import javax.swing.JTextField;
 
 import powerband.controlador.FachadaControlador;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public final class PanelConfiguracion extends JPanel {
 
@@ -120,8 +122,9 @@ public final class PanelConfiguracion extends JPanel {
     }
 
     private static void registrarError(Throwable fallo) {
-        LoggerPowerBand.getInstance().registrarError(
-                "Fallo al guardar una opción de configuración: " + fallo);
+        LoggerPowerBand.getInstance().registrar(Log.error(
+                "Fallo al guardar una opción de configuración: " + fallo,
+                OrigenLog.UI, fallo));
     }
 
     private static final class FilaOpcion extends JPanel {

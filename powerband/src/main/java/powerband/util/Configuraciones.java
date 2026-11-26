@@ -17,6 +17,7 @@ public final class Configuraciones {
         this.host = Constantes.HOST_DEFECTO;
         this.puerto = Constantes.PUERTO_DEFECTO;
         this.opcionesModificables = new LinkedHashMap<>();
+        this.opcionesModificables.put(Constantes.OPCION_DEBUG_LOG, Boolean.FALSE);
     }
 
     public static Configuraciones getInstance() {
@@ -50,19 +51,25 @@ public final class Configuraciones {
         this.puerto = puerto;
     }
 
-    public Object getOpcion(String clave) {
+    public synchronized Object getOpcion(String clave) {
         return opcionesModificables.get(requireClave(clave));
     }
 
-    public void setOpcion(String clave, Object valor) {
+    public synchronized void setOpcion(String clave, Object valor) {
+        if (Constantes.OPCION_DEBUG_LOG.equals(clave) && !(valor instanceof Boolean)) {
+            throw new IllegalArgumentException("La opción de depuración debe ser booleana");
+        }
         opcionesModificables.put(requireClave(clave), valor);
     }
 
-    public void eliminarOpcion(String clave) {
+    public synchronized void eliminarOpcion(String clave) {
+        if (Constantes.OPCION_DEBUG_LOG.equals(clave)) {
+            throw new IllegalArgumentException("No se puede eliminar la opción de depuración");
+        }
         opcionesModificables.remove(requireClave(clave));
     }
 
-    public Map<String, Object> getOpcionesModificables() {
+    public synchronized Map<String, Object> getOpcionesModificables() {
         return Collections.unmodifiableMap(new LinkedHashMap<>(opcionesModificables));
     }
 

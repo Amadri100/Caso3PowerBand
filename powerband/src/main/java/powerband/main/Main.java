@@ -6,6 +6,9 @@ import javax.swing.SwingUtilities;
 
 import powerband.controlador.Controlador;
 import powerband.controlador.FachadaControlador;
+import powerband.logging.Log;
+import powerband.logging.LoggerPowerBand;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.BandClient;
 import powerband.ui.VentanaPrincipal;
 import powerband.util.Configuraciones;
@@ -14,6 +17,7 @@ import powerband.util.Constantes;
 public class Main {
 
     public static void main(String[] args) throws Exception {
+        instalarManejadorExcepciones();
         if (esDemostracionSintetizadores(args)) {
             ejecutarDemostracionSintetizadores(args);
             return;
@@ -22,6 +26,25 @@ public class Main {
             VentanaPrincipal ventana =
                     new VentanaPrincipal(crearFachada());
             ventana.setVisible(true);
+        });
+    }
+
+    static void instalarManejadorExcepciones() {
+        Thread.UncaughtExceptionHandler anterior = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((hilo, fallo) -> {
+            try {
+                LoggerPowerBand.getInstance().registrar(Log.error(
+                        "Excepción no capturada en el hilo " + hilo.getName(),
+                        OrigenLog.MAIN, fallo));
+            } catch (IllegalStateException falloLog) {
+                fallo.addSuppressed(falloLog);
+            }
+            if (anterior != null) {
+                anterior.uncaughtException(hilo, fallo);
+            } else {
+                System.err.println("Exception in thread \"" + hilo.getName() + "\"");
+                fallo.printStackTrace(System.err);
+            }
         });
     }
 

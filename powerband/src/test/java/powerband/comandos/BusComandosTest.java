@@ -12,6 +12,8 @@ import org.junit.jupiter.api.io.TempDir;
 import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
+import powerband.util.Configuraciones;
+import powerband.util.Constantes;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,6 +94,24 @@ class BusComandosTest {
                 carpetaTemporal.resolve("powerband.log"));
         assertTrue(contenido.contains("Fallo al notificar"));
         assertTrue(contenido.contains("fallo de prueba"));
+    }
+
+    @Test
+    void registraOrigenYUbicacionDelFalloDeObservador() throws Exception {
+        Configuraciones.getInstance().setOpcion(Constantes.OPCION_DEBUG_LOG, true);
+        try {
+            BusComandos bus = new BusComandos();
+            bus.registrarObservador((comando, momento) -> {
+                throw new IllegalStateException("fallo de observador");
+            });
+            bus.publicar(comandoDePrueba(), 20L);
+            String contenido = Files.readString(carpetaTemporal.resolve("powerband.log"));
+            assertTrue(contenido.contains("origen=COMANDOS"));
+            assertTrue(contenido.contains("java.lang.IllegalStateException"));
+            assertTrue(contenido.contains("BusComandosTest.java:"));
+        } finally {
+            Configuraciones.getInstance().setOpcion(Constantes.OPCION_DEBUG_LOG, false);
+        }
     }
 
     private static Comando comandoDePrueba() {

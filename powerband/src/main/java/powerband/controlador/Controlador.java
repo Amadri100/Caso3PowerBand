@@ -26,6 +26,8 @@ import powerband.instrumentos.Control;
 import powerband.instrumentos.Microfono;
 import powerband.instrumentos.Tableta;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
 import powerband.util.Configuraciones;
@@ -459,7 +461,7 @@ public final class Controlador implements FachadaControlador {
                 falloGlobal = true;
                 desconectarPorFallo(
                         "Fallo local de transporte durante la reproducción",
-                        excepcion, false);
+                        excepcion, true);
             } else {
                 notificarError(
                         "Error durante la reproducción", excepcion);
@@ -494,11 +496,11 @@ public final class Controlador implements FachadaControlador {
             Throwable causaNotificacion = causa == null
                     ? new IllegalStateException(mensaje)
                     : causa;
-            notificarError(mensaje, causaNotificacion, false);
+            notificarError(mensaje, causaNotificacion, causa != null);
             return;
         }
         if (esFalloTransporte(causa)) {
-            desconectarPorFallo(mensaje, causa, false);
+            desconectarPorFallo(mensaje, causa, true);
             return;
         }
         if (entrada != null) {
@@ -508,7 +510,7 @@ public final class Controlador implements FachadaControlador {
         Throwable causaNotificacion = causa == null
                 ? new IllegalStateException(mensaje)
                 : causa;
-        notificarError(mensaje, causaNotificacion, false);
+        notificarError(mensaje, causaNotificacion, causa != null);
     }
 
     private void desconectarPorFallo(
@@ -606,9 +608,9 @@ public final class Controlador implements FachadaControlador {
             try {
                 observador.estadoCambiado(nuevoEstado);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrarError(
+                LoggerPowerBand.getInstance().registrar(Log.error(
                         "Fallo al notificar un estado a un observador: "
-                                + excepcion);
+                                + excepcion, OrigenLog.CONTROLADOR, excepcion));
             }
         }
     }
@@ -626,8 +628,9 @@ public final class Controlador implements FachadaControlador {
             try {
                 observador.dispositivoDesconectado(instrumento);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrarError(
-                        "Fallo al notificar la desconexión a un observador: " + excepcion);
+                LoggerPowerBand.getInstance().registrar(Log.error(
+                        "Fallo al notificar la desconexión a un observador: " + excepcion,
+                        OrigenLog.CONTROLADOR, excepcion));
             }
         }
     }
@@ -635,8 +638,8 @@ public final class Controlador implements FachadaControlador {
     private void notificarError(
             String mensaje, Throwable causa, boolean registrar) {
         if (registrar) {
-            LoggerPowerBand.getInstance().registrarError(
-                    mensaje + ": " + causa);
+            LoggerPowerBand.getInstance().registrar(Log.error(
+                    mensaje + ": " + causa, OrigenLog.CONTROLADOR, causa));
         }
         List<ObservadorEstado> copia;
         synchronized (observadores) {
@@ -646,9 +649,9 @@ public final class Controlador implements FachadaControlador {
             try {
                 observador.errorNotificado(mensaje, causa);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrarError(
+                LoggerPowerBand.getInstance().registrar(Log.error(
                         "Fallo al notificar un error a un observador: "
-                                + excepcion);
+                                + excepcion, OrigenLog.CONTROLADOR, excepcion));
             }
         }
     }

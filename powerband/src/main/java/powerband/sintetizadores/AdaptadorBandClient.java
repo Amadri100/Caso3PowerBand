@@ -6,6 +6,8 @@ import java.util.Objects;
 import powerband.comandos.TipoAccion;
 import powerband.excepciones.FalloTransporteException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 
 abstract class AdaptadorBandClient implements Sintetizador {
@@ -95,7 +97,8 @@ abstract class AdaptadorBandClient implements Sintetizador {
 
     protected final void registrarError(RuntimeException error) {
         try {
-            LoggerPowerBand.getInstance().registrarError(error.getMessage());
+            LoggerPowerBand.getInstance().registrar(
+                    Log.error(error.getMessage(), OrigenLog.SINTETIZADORES, error));
         } catch (IllegalStateException falloLog) {
             error.addSuppressed(falloLog);
         }

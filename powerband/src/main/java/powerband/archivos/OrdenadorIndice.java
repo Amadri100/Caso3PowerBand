@@ -14,6 +14,8 @@ import powerband.excepciones.NombreDuplicadoException;
 import powerband.excepciones.OrdenamientoException;
 import powerband.excepciones.tipos.TipoErrorOrdenamiento;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 
 
@@ -90,25 +92,25 @@ public final class OrdenadorIndice {
             return entregarResultado(origenOrdenado, temporales);
         } catch (OrdenamientoException excepcion) {
             limpiarTemporales(temporales, excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    excepcion.getMessage(), rutaIndice.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         } catch (ArchivoException excepcion) {
             limpiarTemporales(temporales, excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    excepcion.getMessage(), rutaIndice.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         } catch (IOException excepcion) {
             ArchivoException fallo = ArchivoException.errorES(
                     rutaIndice.toString(), "ordenar el índice", excepcion);
             limpiarTemporales(temporales, fallo);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    fallo.getMessage(), rutaIndice.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    fallo.getMessage(), rutaIndice.toString(), OrigenLog.ARCHIVOS, fallo));
             throw fallo;
         } catch (RuntimeException excepcion) {
             limpiarTemporales(temporales, excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    excepcion.getMessage(), rutaIndice.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         }
     }

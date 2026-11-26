@@ -3,8 +3,9 @@ package powerband.input;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import powerband.excepciones.FalloTransporteException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public abstract class Entrada implements AutoCloseable {
 
@@ -140,17 +141,16 @@ public abstract class Entrada implements AutoCloseable {
         }
         String mensaje = "Desconexion de entrada " + nombre
                 + ": " + (motivo == null ? "dispositivo desconectado" : motivo);
-        if (!esFalloTransporte(causaNotificacion)) {
-            LoggerPowerBand.getInstance().registrarError(mensaje);
-        }
+        LoggerPowerBand.getInstance().registrar(
+                Log.error(mensaje, OrigenLog.INPUT, causaNotificacion));
         Consumer<Entrada> callback = callbackDesconexion;
         if (callback != null) {
             try {
                 callback.accept(this);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrarError(
+                LoggerPowerBand.getInstance().registrar(Log.error(
                         "Error al notificar desconexion de " + nombre
-                                + ": " + excepcion);
+                                + ": " + excepcion, OrigenLog.INPUT, excepcion));
             }
         }
         ObservadorDesconexion observador = observadorDesconexion;
@@ -159,9 +159,9 @@ public abstract class Entrada implements AutoCloseable {
                 observador.entradaDesconectada(
                         this, motivo, causaNotificacion);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrarError(
+                LoggerPowerBand.getInstance().registrar(Log.error(
                         "Error al notificar desconexion de " + nombre
-                                + ": " + excepcion);
+                                + ": " + excepcion, OrigenLog.INPUT, excepcion));
             }
         }
         Runnable callbackSimple = callbackRunnable;
@@ -169,9 +169,9 @@ public abstract class Entrada implements AutoCloseable {
             try {
                 callbackSimple.run();
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrarError(
+                LoggerPowerBand.getInstance().registrar(Log.error(
                         "Error al notificar desconexion de " + nombre
-                                + ": " + excepcion);
+                                + ": " + excepcion, OrigenLog.INPUT, excepcion));
             }
         }
     }
@@ -185,8 +185,9 @@ public abstract class Entrada implements AutoCloseable {
         String mensaje = "Valor rechazado en " + nombre + ": "
                 + descripcion + "=" + valor
                 + " (rango permitido " + minimo + " a " + maximo + ")";
-        LoggerPowerBand.getInstance().registrarError(mensaje);
-        throw new IllegalArgumentException(mensaje);
+        IllegalArgumentException fallo = new IllegalArgumentException(mensaje);
+        LoggerPowerBand.getInstance().registrar(Log.error(mensaje, OrigenLog.INPUT, fallo));
+        throw fallo;
     }
 
     protected void validarValor(String descripcion, double valor,
@@ -218,23 +219,18 @@ public abstract class Entrada implements AutoCloseable {
         } catch (RuntimeException | java.io.IOException excepcion) {
             if (activa) {
                 desconectar(excepcion.getMessage(), excepcion);
+            } else {
+                LoggerPowerBand.getInstance().registrar(Log.error(
+                        "Error de captura al detener " + nombre, OrigenLog.INPUT, excepcion));
             }
         } catch (Exception excepcion) {
             if (activa) {
                 desconectar(excepcion.getMessage(), excepcion);
+            } else {
+                LoggerPowerBand.getInstance().registrar(Log.error(
+                        "Error de captura al detener " + nombre, OrigenLog.INPUT, excepcion));
             }
         }
-    }
-
-    private static boolean esFalloTransporte(Throwable causa) {
-        Throwable actual = causa;
-        while (actual != null) {
-            if (actual instanceof FalloTransporteException) {
-                return true;
-            }
-            actual = actual.getCause();
-        }
-        return false;
     }
 
     private static String validarNombre(String nombre) {

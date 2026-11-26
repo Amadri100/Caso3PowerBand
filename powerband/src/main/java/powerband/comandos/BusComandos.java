@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public final class BusComandos {
 
@@ -52,8 +54,8 @@ public final class BusComandos {
 
         LoggerPowerBand logger = LoggerPowerBand.getInstance();
         for (RuntimeException fallo : fallos) {
-            logger.registrarError("Fallo al notificar un comando a un observador: "
-                    + fallo);
+            logger.registrar(Log.error("Fallo al notificar un comando a un observador: "
+                    + fallo, OrigenLog.COMANDOS, fallo));
         }
     }
 }

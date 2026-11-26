@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.Sintetizador;
 
 public abstract class ComandoSostenido implements Comando {
@@ -34,7 +36,7 @@ public abstract class ComandoSostenido implements Comando {
     @Override
     public final void ejecutar() {
         destino.ejecutar(tipoAccion, parametros());
-        LoggerPowerBand.getInstance().registrarComando(this);
+        LoggerPowerBand.getInstance().registrar(Log.comando(this, OrigenLog.COMANDOS));
     }
 
     @Override

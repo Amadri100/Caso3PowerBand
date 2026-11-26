@@ -22,6 +22,8 @@ import javax.swing.SwingWorker;
 
 import powerband.controlador.FachadaControlador;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public final class PanelSesiones extends JPanel {
 
@@ -285,7 +287,8 @@ public final class PanelSesiones extends JPanel {
     }
 
     private static void registrarError(Throwable fallo) {
-        LoggerPowerBand.getInstance().registrarError(
-                "Fallo en una operación del panel de sesiones: " + fallo);
+        LoggerPowerBand.getInstance().registrar(Log.error(
+                "Fallo en una operación del panel de sesiones: " + fallo,
+                OrigenLog.UI, fallo));
     }
 }

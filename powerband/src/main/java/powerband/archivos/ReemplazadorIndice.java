@@ -8,6 +8,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 import powerband.excepciones.ArchivoException;
 import powerband.excepciones.CantidadInesperadaException;
@@ -42,20 +44,20 @@ public final class ReemplazadorIndice {
             validarResultado(cantidadResultadoEsperada);
             moverResultado();
         } catch (ArchivoException excepcion) {
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    excepcion.getMessage(), rutaIndice.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    excepcion.getMessage(), rutaIndice.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         } catch (IOException excepcion) {
             ArchivoException fallo = ArchivoException.errorES(
                     rutaIndice.toString(), "reemplazar el índice", excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    fallo.getMessage(), rutaIndice.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    fallo.getMessage(), rutaIndice.toString(), OrigenLog.ARCHIVOS, fallo));
             throw fallo;
         } catch (RuntimeException excepcion) {
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                     "No se pudo reemplazar el índice " + rutaIndice + ": "
                             + excepcion.getMessage(),
-                    rutaIndice.toString());
+                    rutaIndice.toString(), OrigenLog.ARCHIVOS, excepcion));
             throw excepcion;
         }
     }

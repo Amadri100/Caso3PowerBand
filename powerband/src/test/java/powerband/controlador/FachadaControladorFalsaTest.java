@@ -151,7 +151,8 @@ class FachadaControladorFalsaTest {
                 new FachadaControladorFalsa();
         Map<String, Object> opciones = fachada.opcionesConfigurables();
 
-        assertTrue(opciones.isEmpty());
+        assertEquals(Boolean.FALSE,
+                opciones.get(powerband.util.Constantes.OPCION_DEBUG_LOG));
         assertThrows(UnsupportedOperationException.class,
                 () -> opciones.put("host", "localhost"));
         assertThrows(IllegalArgumentException.class,

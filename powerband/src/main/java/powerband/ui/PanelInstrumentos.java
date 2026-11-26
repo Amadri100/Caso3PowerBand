@@ -33,6 +33,8 @@ import powerband.controlador.FachadaControlador;
 import powerband.controlador.ObservadorEstado;
 import powerband.util.DispositivoEntrada;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.IdSintetizador;
 
 public final class PanelInstrumentos extends JPanel {
@@ -564,9 +566,9 @@ public final class PanelInstrumentos extends JPanel {
     }
 
     private static void registrarError(Throwable fallo) {
-        LoggerPowerBand.getInstance().registrarError(
+        LoggerPowerBand.getInstance().registrar(Log.error(
                 "Fallo en una operación del panel de instrumentos: "
-                        + fallo);
+                        + fallo, OrigenLog.UI, fallo));
     }
 
     private record Catalogo(

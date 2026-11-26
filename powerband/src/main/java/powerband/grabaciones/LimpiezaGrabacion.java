@@ -7,6 +7,8 @@ import java.util.Objects;
 
 import powerband.excepciones.ArchivoException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 
 public final class LimpiezaGrabacion {
 
@@ -42,8 +44,8 @@ public final class LimpiezaGrabacion {
             if (mensaje == null || mensaje.isBlank()) {
                 mensaje = fallo.getClass().getSimpleName();
             }
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    mensaje, archivos.directorio().toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    mensaje, archivos.directorio().toString(), OrigenLog.GRABACIONES, fallo));
         } catch (RuntimeException falloRegistro) {
             fallo.addSuppressed(falloRegistro);
         }

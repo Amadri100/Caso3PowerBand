@@ -9,6 +9,8 @@ import powerband.comandos.Comando;
 import powerband.comandos.ComandoReconstruido;
 import powerband.comandos.TipoAccion;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.Sintetizador;
 
 public abstract class Instrumento {
@@ -159,7 +161,7 @@ public abstract class Instrumento {
     }
 
     protected void registrarError(String mensaje, RuntimeException excepcion) {
-        LoggerPowerBand.getInstance().registrarError(
-                mensaje + ": " + excepcion);
+        LoggerPowerBand.getInstance().registrar(Log.error(
+                mensaje + ": " + excepcion, OrigenLog.INSTRUMENTOS, excepcion));
     }
 }

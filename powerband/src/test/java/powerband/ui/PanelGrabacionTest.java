@@ -1,6 +1,8 @@
 package powerband.ui;
 
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -11,9 +13,14 @@ import java.util.function.BiFunction;
 
 import javax.swing.SwingUtilities;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import powerband.controlador.FachadaControlador;
+import powerband.logging.LoggerPowerBand;
+import powerband.util.Constantes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,6 +28,19 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PanelGrabacionTest {
+
+    @TempDir
+    Path carpetaTemporal;
+
+    @BeforeEach
+    void configurarLogger() {
+        LoggerPowerBand.cambiarPath(carpetaTemporal);
+    }
+
+    @AfterEach
+    void restaurarLogger() {
+        LoggerPowerBand.cambiarPath(Path.of(Constantes.RUTA_LOGS));
+    }
 
     @Test
     void conservaLaFachadaYNoIniciaNiDetieneAlConstruirse()
@@ -172,6 +192,8 @@ class PanelGrabacionTest {
             assertEquals(1, avisos.get());
         });
         assertEquals("Nueva", nombreFinalizado.get());
+        String log = Files.readString(carpetaTemporal.resolve("powerband.log"));
+        assertTrue(log.contains("Nombre duplicado de grabación: Existe"));
     }
 
     @Test

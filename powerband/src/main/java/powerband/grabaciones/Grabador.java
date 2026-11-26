@@ -14,6 +14,8 @@ import powerband.excepciones.ArchivoException;
 import powerband.excepciones.ArgumentoInvalidoException;
 import powerband.excepciones.EstadoInvalidoException;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 
 public final class Grabador implements ObservadorComandos {
@@ -76,17 +78,17 @@ public final class Grabador implements ObservadorComandos {
                 ArchivoException fallo = ArchivoException.errorES(
                         directorioGrabaciones.toString(),
                         "iniciar la grabación", excepcion);
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         fallo.getMessage(),
-                        directorioGrabaciones.toString());
+                        directorioGrabaciones.toString(), OrigenLog.GRABACIONES, fallo));
                 throw fallo;
             } catch (RuntimeException excepcion) {
                 if (temporal != null) {
                     eliminarTemporal(temporal, excepcion);
                 }
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         excepcion.getMessage(),
-                        directorioGrabaciones.toString());
+                        directorioGrabaciones.toString(), OrigenLog.GRABACIONES, excepcion));
                 throw excepcion;
             }
         }
@@ -164,9 +166,9 @@ public final class Grabador implements ObservadorComandos {
             if (comando == null) {
                 ArgumentoInvalidoException fallo =
                         ArgumentoInvalidoException.comandoNulo();
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         fallo.getMessage(),
-                        archivoSesionTemporal.toString());
+                        archivoSesionTemporal.toString(), OrigenLog.GRABACIONES, fallo));
                 return false;
             }
 
@@ -174,9 +176,9 @@ public final class Grabador implements ObservadorComandos {
             if (diferenciaNanos < 0) {
                 ArgumentoInvalidoException fallo =
                         ArgumentoInvalidoException.momentoAnterior();
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         fallo.getMessage(),
-                        archivoSesionTemporal.toString());
+                        archivoSesionTemporal.toString(), OrigenLog.GRABACIONES, fallo));
                 return false;
             }
 
@@ -195,15 +197,15 @@ public final class Grabador implements ObservadorComandos {
                         archivoSesionTemporal.toString(),
                         "guardar un comando grabado", excepcion);
                 registrarFalloGrabacion(fallo);
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         fallo.getMessage(),
-                        archivoSesionTemporal.toString());
+                        archivoSesionTemporal.toString(), OrigenLog.GRABACIONES, fallo));
                 return false;
             } catch (RuntimeException excepcion) {
                 registrarFalloGrabacion(excepcion);
-                LoggerPowerBand.getInstance().registrarErrorArchivo(
+                LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
                         excepcion.getMessage(),
-                        archivoSesionTemporal.toString());
+                        archivoSesionTemporal.toString(), OrigenLog.GRABACIONES, excepcion));
                 return false;
             }
         }

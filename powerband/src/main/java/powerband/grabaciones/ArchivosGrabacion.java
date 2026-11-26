@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.util.Constantes;
 import powerband.excepciones.ArchivoException;
 
@@ -49,8 +51,8 @@ public final class ArchivosGrabacion {
             ArchivoException fallo = ArchivoException.errorES(
                     rutaDirectorio.toString(),
                     "preparar los archivos de grabación", excepcion);
-            LoggerPowerBand.getInstance().registrarErrorArchivo(
-                    fallo.getMessage(), rutaDirectorio.toString());
+            LoggerPowerBand.getInstance().registrar(Log.errorArchivo(
+                    fallo.getMessage(), rutaDirectorio.toString(), OrigenLog.GRABACIONES, fallo));
             throw fallo;
         }
 
@@ -77,8 +79,8 @@ public final class ArchivosGrabacion {
     private static void crearSiFalta(Path ruta) throws IOException {
         try {
             Files.createFile(ruta);
-            LoggerPowerBand.getInstance().registrarInfo(
-                    "Archivo de grabacion creado: " + ruta);
+            LoggerPowerBand.getInstance().registrar(Log.info(
+                    "Archivo de grabacion creado: " + ruta, OrigenLog.GRABACIONES));
         } catch (FileAlreadyExistsException excepcion) {
             if (!Files.isRegularFile(ruta)) {
                 throw ArchivoException.rutaNoRegular(ruta.toString());

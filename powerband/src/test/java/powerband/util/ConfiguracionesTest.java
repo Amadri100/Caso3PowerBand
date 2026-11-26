@@ -15,6 +15,7 @@ class ConfiguracionesTest {
 
         assertEquals(Constantes.HOST_DEFECTO, configuraciones.getHost());
         assertEquals(Constantes.PUERTO_DEFECTO, configuraciones.getPuerto());
+        assertEquals(Boolean.FALSE, configuraciones.getOpcion(Constantes.OPCION_DEBUG_LOG));
     }
 
     @Test
@@ -39,6 +40,17 @@ class ConfiguracionesTest {
                 () -> configuraciones.setPuerto(0));
         assertThrows(IllegalArgumentException.class,
                 () -> configuraciones.setPuerto(65536));
+    }
+
+    @Test
+    void opcionDebugEsBooleanaYNoPuedeEliminarse() {
+        Configuraciones configuraciones = new Configuraciones();
+        configuraciones.setOpcion(Constantes.OPCION_DEBUG_LOG, true);
+        assertEquals(Boolean.TRUE, configuraciones.getOpcion(Constantes.OPCION_DEBUG_LOG));
+        assertThrows(IllegalArgumentException.class,
+                () -> configuraciones.setOpcion(Constantes.OPCION_DEBUG_LOG, "true"));
+        assertThrows(IllegalArgumentException.class,
+                () -> configuraciones.eliminarOpcion(Constantes.OPCION_DEBUG_LOG));
     }
 
     @Test

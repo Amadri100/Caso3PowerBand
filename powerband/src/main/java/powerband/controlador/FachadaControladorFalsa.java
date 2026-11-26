@@ -10,8 +10,12 @@ import java.util.Map;
 import java.util.Objects;
 
 import powerband.archivos.ValidacionesGenerales;
+import powerband.util.Configuraciones;
+import powerband.util.Constantes;
 import powerband.util.DispositivoEntrada;
 import powerband.logging.LoggerPowerBand;
+import powerband.logging.Log;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.IdSintetizador;
 
 public final class FachadaControladorFalsa implements FachadaControlador {
@@ -182,6 +186,8 @@ public final class FachadaControladorFalsa implements FachadaControlador {
 
     @Override
     public Map<String, Object> opcionesConfigurables() {
+        opciones.put(Constantes.OPCION_DEBUG_LOG,
+                Configuraciones.getInstance().getOpcion(Constantes.OPCION_DEBUG_LOG));
         return Collections.unmodifiableMap(
                 new LinkedHashMap<>(opciones));
     }
@@ -189,6 +195,9 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     @Override
     public Object consultarOpcion(String clave) {
         validarClaveOpcion(clave);
+        if (Constantes.OPCION_DEBUG_LOG.equals(clave)) {
+            return Configuraciones.getInstance().getOpcion(clave);
+        }
         if (!opciones.containsKey(clave)) {
             throw errorArgumento("La opción configurable no existe: " + clave);
         }
@@ -198,6 +207,10 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     @Override
     public void establecerOpcion(String clave, Object valor) {
         validarClaveOpcion(clave);
+        if (Constantes.OPCION_DEBUG_LOG.equals(clave)) {
+            Configuraciones.getInstance().setOpcion(clave, valor);
+            return;
+        }
         if (!opciones.containsKey(clave)) {
             throw errorArgumento("La opción configurable no existe: " + clave);
         }
@@ -336,17 +349,18 @@ public final class FachadaControladorFalsa implements FachadaControlador {
                 fallos.add(fallo);
             }
         }
-        LoggerPowerBand.getInstance().registrarError(
-                mensaje + (causa == null ? "" : ": " + causa));
+        LoggerPowerBand.getInstance().registrar(Log.error(
+                mensaje + (causa == null ? "" : ": " + causa),
+                OrigenLog.CONTROLADOR, causa));
         registrarFallosObservadores("error", fallos);
     }
 
     private void registrarFallosObservadores(
             String tipoNotificacion, List<RuntimeException> fallos) {
         for (RuntimeException fallo : fallos) {
-            LoggerPowerBand.getInstance().registrarError(
+            LoggerPowerBand.getInstance().registrar(Log.error(
                     "Fallo al notificar " + tipoNotificacion
-                            + " a un observador: " + fallo);
+                            + " a un observador: " + fallo, OrigenLog.CONTROLADOR, fallo));
         }
     }
 

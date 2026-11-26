@@ -25,6 +25,7 @@ public final class Constantes {
     public static final String CATEGORIA_COMANDO = "comando";
     public static final String CATEGORIA_INFO = "info";
     public static final String CATEGORIA_ERROR = "error";
+    public static final String OPCION_DEBUG_LOG = "Información de depuración del log";
 
     public static final int NOTA_MIDI_MINIMA = 0;
     public static final int NOTA_MIDI_MAXIMA = 127;
