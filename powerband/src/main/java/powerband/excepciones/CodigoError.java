@@ -2,11 +2,11 @@ package powerband.excepciones;
 
 public interface CodigoError {
 
-    String codigo();
+    public String codigo();
 
-    String plantilla();
+    public String plantilla();
 
-    default String formatear(Object... argumentos) {
+    public default String formatear(Object... argumentos) {
         return String.format(plantilla(), argumentos);
     }
 }

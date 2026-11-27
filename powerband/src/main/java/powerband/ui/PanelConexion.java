@@ -82,15 +82,15 @@ public final class PanelConexion extends JPanel {
         add(acciones, BorderLayout.CENTER);
     }
 
-    JButton botonConectar() {
+    protected JButton botonConectar() {
         return botonConectar;
     }
 
-    JButton botonDesconectar() {
+    protected JButton botonDesconectar() {
         return botonDesconectar;
     }
 
-    FachadaControlador fachada() {
+    protected FachadaControlador fachada() {
         return controlador;
     }
 

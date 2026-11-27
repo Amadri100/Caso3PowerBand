@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import powerband.excepciones.ConstantesExcepciones;
 import powerband.util.Configuraciones;
 import powerband.util.Constantes;
 
@@ -59,6 +60,31 @@ class LoggerPowerBandTest {
                 StandardCharsets.UTF_8);
         assertTrue(contenido.contains("archivo invalido"));
         assertTrue(contenido.contains("powerband/recordings/recordings.music"));
+    }
+
+    @Test
+    void registraExcepcionNoCapturadaConDiagnostico() throws Exception {
+        LoggerPowerBand.cambiarPath(carpetaTemporal);
+        Configuraciones.getInstance().setOpcion(Constantes.OPCION_DEBUG_LOG, true);
+        RuntimeException fallo = new RuntimeException("fallo inesperado");
+        fallo.setStackTrace(new StackTraceElement[] {
+                new StackTraceElement("powerband.Demo", "ejecutar",
+                        "Demo.java", 42)
+        });
+
+        LoggerPowerBand.getInstance().registrarExcepcionNoCapturada(
+                fallo, OrigenLog.CONTROLADOR);
+
+        String contenido = Files.readString(
+                carpetaTemporal.resolve("powerband.log"),
+                StandardCharsets.UTF_8);
+        assertTrue(contenido.contains(
+                ConstantesExcepciones.MSG_EXCEPCION_NO_CAPTURADA));
+        assertTrue(contenido.contains("RuntimeException: fallo inesperado"));
+        assertTrue(contenido.contains("java.lang.RuntimeException: fallo inesperado"));
+        assertTrue(contenido.contains(
+                "ubicacionError=powerband.Demo.ejecutar(Demo.java:42)"));
+        assertFalse(contenido.contains(" en ControladorDispositivos."));
     }
 
     @Test

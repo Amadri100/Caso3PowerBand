@@ -67,6 +67,8 @@ public abstract class Entrada implements AutoCloseable {
                 try {
                     hiloActual.join();
                 } catch (InterruptedException excepcion) {
+                    LoggerPowerBand.getInstance().registrarExcepcionNoCapturada(
+                            excepcion, OrigenLog.INPUT);
                     interrumpido = true;
                 }
             }
@@ -141,14 +143,14 @@ public abstract class Entrada implements AutoCloseable {
         }
         String mensaje = "Desconexion de entrada " + nombre
                 + ": " + (motivo == null ? "dispositivo desconectado" : motivo);
-        LoggerPowerBand.getInstance().registrar(
+        LoggerPowerBand.getInstance().registrarONotificarFallo(
                 Log.error(mensaje, OrigenLog.INPUT, causaNotificacion));
         Consumer<Entrada> callback = callbackDesconexion;
         if (callback != null) {
             try {
                 callback.accept(this);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrar(Log.error(
+                LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                         "Error al notificar desconexion de " + nombre
                                 + ": " + excepcion, OrigenLog.INPUT, excepcion));
             }
@@ -159,7 +161,7 @@ public abstract class Entrada implements AutoCloseable {
                 observador.entradaDesconectada(
                         this, motivo, causaNotificacion);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrar(Log.error(
+                LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                         "Error al notificar desconexion de " + nombre
                                 + ": " + excepcion, OrigenLog.INPUT, excepcion));
             }
@@ -169,7 +171,7 @@ public abstract class Entrada implements AutoCloseable {
             try {
                 callbackSimple.run();
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrar(Log.error(
+                LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                         "Error al notificar desconexion de " + nombre
                                 + ": " + excepcion, OrigenLog.INPUT, excepcion));
             }

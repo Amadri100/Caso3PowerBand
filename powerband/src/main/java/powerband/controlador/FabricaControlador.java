@@ -22,16 +22,16 @@ import powerband.instrumentos.Tableta;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
 
-final class FabricaControlador {
+public final class FabricaControlador {
 
     private FabricaControlador() {
     }
 
-    static Controlador crear() throws IOException {
+    public static Controlador crear() throws IOException {
         return crear(ArchivosGrabacion.inicializar());
     }
 
-    static Controlador crear(ArchivosGrabacion archivos) {
+    protected static Controlador crear(ArchivosGrabacion archivos) {
         Objects.requireNonNull(archivos, "archivos");
         BusComandos bus = new BusComandos();
         Microfono microfono = new Microfono(null, bus);

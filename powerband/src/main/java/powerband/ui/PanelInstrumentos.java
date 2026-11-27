@@ -382,6 +382,8 @@ public final class PanelInstrumentos extends JPanel {
                             Thread.sleep(100);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
+                            LoggerPowerBand.getInstance().registrarExcepcionNoCapturada(
+                                    e, OrigenLog.UI);
                             break;
                         }
                     }

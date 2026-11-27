@@ -6,9 +6,9 @@ public interface Comando {
 
     void ejecutar();
 
-    Sintetizador destino();
+    public Sintetizador destino();
 
-    TipoAccion tipoAccion();
+    public TipoAccion tipoAccion();
 
     double[] parametros();
 }

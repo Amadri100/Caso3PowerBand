@@ -2,6 +2,9 @@ package powerband.excepciones;
 
 public final class ConstantesExcepciones {
 
+    public static final String MSG_EXCEPCION_NO_CAPTURADA =
+            "Excepcion no capturada";
+
     public static final String PREFIJO_ARCHIVO = "ARC-";
     public static final String PREFIJO_ORDENAMIENTO = "ORD-";
     public static final String PREFIJO_ARGUMENTO = "ARG-";

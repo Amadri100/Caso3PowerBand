@@ -11,7 +11,7 @@ import powerband.util.Constantes;
 
 public interface ValidacionesGenerales {
 
-    static void validarNombre(String nombre) {
+    public static void validarNombre(String nombre) {
         byte[] bytes = codificarNombre(nombre);
         if (bytes.length == 0
                 || bytes.length > Constantes.LONGITUD_MAXIMA_NOMBRE) {
@@ -22,7 +22,7 @@ public interface ValidacionesGenerales {
         }
     }
 
-    static byte[] codificarNombre(String nombre) {
+    public static byte[] codificarNombre(String nombre) {
         if (nombre == null) {
             throw ArgumentoInvalidoException.nombreNulo();
         }
@@ -39,7 +39,7 @@ public interface ValidacionesGenerales {
         }
     }
 
-    static String decodificarNombre(byte[] bytes) {
+    public static String decodificarNombre(byte[] bytes) {
         int longitud = 0;
         while (longitud < bytes.length && bytes[longitud] != 0) {
             longitud++;

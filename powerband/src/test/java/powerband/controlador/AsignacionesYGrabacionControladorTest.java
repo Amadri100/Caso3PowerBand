@@ -1,6 +1,9 @@
 package powerband.controlador;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -164,6 +167,75 @@ class AsignacionesYGrabacionControladorTest {
 
         controlador.desconectar();
         assertFalse(Files.exists(temporal));
+    }
+
+    @Test
+    void desconexionNotificaYRetiraAsignacionAunqueElLogNoSePuedaEscribir()
+            throws Exception {
+        Fixture fixture = crearFixture();
+        Controlador controlador = fixture.controlador();
+        List<String> errores = new ArrayList<>();
+        List<String> retiros = new ArrayList<>();
+        AtomicReference<Throwable> causaRecibida = new AtomicReference<>();
+        controlador.registrarObservadorEstado(new ObservadorEstado() {
+            @Override
+            public void estadoCambiado(EstadoControlador estado) {
+            }
+
+            @Override
+            public void errorNotificado(String mensaje, Throwable causa) {
+                throw new IllegalStateException("fallo observador de error");
+            }
+
+            @Override
+            public void dispositivoDesconectado(String instrumento) {
+                throw new IllegalStateException("fallo observador de retiro");
+            }
+        });
+        controlador.registrarObservadorEstado(new ObservadorEstado() {
+            @Override
+            public void estadoCambiado(EstadoControlador estado) {
+            }
+
+            @Override
+            public void errorNotificado(String mensaje, Throwable causa) {
+                errores.add(mensaje);
+                causaRecibida.set(causa);
+            }
+
+            @Override
+            public void dispositivoDesconectado(String instrumento) {
+                retiros.add(instrumento);
+            }
+        });
+        assertTrue(controlador.asignarDispositivo("control", "pad-a"));
+        assertTrue(controlador.asignarDispositivo("microfono", "pad-b"));
+        assertTrue(controlador.conectar());
+        Path rutaInvalida = Files.createFile(carpetaTemporal.resolve("no-es-directorio"));
+        LoggerPowerBand.cambiarPath(rutaInvalida);
+        RuntimeException causa = new IllegalStateException("fallo de captura");
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        PrintStream anterior = System.err;
+        try (PrintStream captura = new PrintStream(salida, true, StandardCharsets.UTF_8)) {
+            System.setErr(captura);
+            fixture.entradaControl().desconectar("control desconectado", causa);
+            assertEquals(List.of("control"), retiros);
+            assertEquals(1, errores.size());
+            assertTrue(errores.get(0).contains("control desconectado"));
+            assertSame(causa, causaRecibida.get());
+            assertEquals(Map.of("microfono", "pad-b"), controlador.dispositivoPorInstrumento());
+            assertFalse(fixture.entradaControl().estaActiva());
+            assertTrue(fixture.entradaMicrofono().estaActiva());
+        } finally {
+            System.setErr(anterior);
+            LoggerPowerBand.cambiarPath(carpetaTemporal);
+            controlador.desconectar();
+        }
+
+        String salidaErrores = salida.toString(StandardCharsets.UTF_8);
+        assertTrue(salidaErrores.contains("No se pudo escribir el log"));
+        assertTrue(salidaErrores.contains("fallo observador de retiro"));
+        assertTrue(salidaErrores.contains("fallo observador de error"));
     }
 
     @Test

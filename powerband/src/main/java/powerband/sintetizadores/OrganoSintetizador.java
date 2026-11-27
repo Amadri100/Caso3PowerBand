@@ -21,7 +21,7 @@ public final class OrganoSintetizador extends AdaptadorBandClient {
         this(bandClient, ProgramadorNotasReal::new);
     }
 
-    OrganoSintetizador(BandClient bandClient,
+    protected OrganoSintetizador(BandClient bandClient,
                        Supplier<ProgramadorNotas> fabricaProgramador) {
         super(bandClient);
         this.fabricaProgramador = Objects.requireNonNull(

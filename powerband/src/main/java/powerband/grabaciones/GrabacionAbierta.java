@@ -20,7 +20,7 @@ public final class GrabacionAbierta implements AutoCloseable {
     private final long posicionFinal;
     private long siguientePosicion;
 
-    GrabacionAbierta(FileChannel canal, Path rutaMusica,
+    protected GrabacionAbierta(FileChannel canal, Path rutaMusica,
             EncabezadoGrabacion encabezado, long siguientePosicion,
             long posicionFinal) {
         this.canal = Objects.requireNonNull(canal, "canal");

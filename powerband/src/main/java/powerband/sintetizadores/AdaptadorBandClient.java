@@ -14,7 +14,7 @@ abstract class AdaptadorBandClient implements Sintetizador {
 
     protected final BandClient bandClient;
 
-    AdaptadorBandClient(BandClient bandClient) {
+    protected AdaptadorBandClient(BandClient bandClient) {
         this.bandClient = Objects.requireNonNull(bandClient, "bandClient");
     }
 

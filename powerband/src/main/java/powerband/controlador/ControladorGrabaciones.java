@@ -18,6 +18,8 @@ import powerband.grabaciones.FinalizadorGrabacion;
 import powerband.grabaciones.GrabacionAbierta;
 import powerband.grabaciones.Grabador;
 import powerband.grabaciones.LimpiezaGrabacion;
+import powerband.logging.LoggerPowerBand;
+import powerband.logging.OrigenLog;
 import powerband.grabaciones.Reproductor;
 
 final class ControladorGrabaciones {
@@ -30,7 +32,7 @@ final class ControladorGrabaciones {
     private final ArchivosGrabacion archivos;
     private volatile Thread hiloReproduccion;
 
-    ControladorGrabaciones(
+    protected ControladorGrabaciones(
             BusComandos busComandos, Grabador grabador,
             CargadorGrabaciones cargador, FinalizadorGrabacion finalizador,
             Reproductor reproductor, ArchivosGrabacion archivos) {
@@ -52,7 +54,7 @@ final class ControladorGrabaciones {
         finalizador.finalizar(nombre);
     }
 
-    List<String> listarSesiones() throws IOException {
+    protected List<String> listarSesiones() throws IOException {
         List<String> nombres = new ArrayList<>();
         for (EntradaListaGrabacion entrada : cargador.listar()) {
             nombres.add(entrada.nombre());
@@ -60,7 +62,7 @@ final class ControladorGrabaciones {
         return List.copyOf(nombres);
     }
 
-    List<String> buscarSesiones(String nombre) throws IOException {
+    protected List<String> buscarSesiones(String nombre) throws IOException {
         ValidacionesGenerales.validarNombre(nombre);
         String filtro = nombre.toLowerCase(Locale.ROOT);
         List<String> coincidencias = new ArrayList<>();
@@ -72,7 +74,7 @@ final class ControladorGrabaciones {
         return List.copyOf(coincidencias);
     }
 
-    Optional<GrabacionAbierta> abrir(String nombre) throws IOException {
+    protected Optional<GrabacionAbierta> abrir(String nombre) throws IOException {
         return cargador.abrir(nombre);
     }
 
@@ -128,7 +130,7 @@ final class ControladorGrabaciones {
         }
     }
 
-    Throwable abortarGrabacion(Throwable fallo, boolean grabando) {
+    protected Throwable abortarGrabacion(Throwable fallo, boolean grabando) {
         if (!grabando && !grabador.estaGrabando()) {
             return fallo;
         }
@@ -159,7 +161,7 @@ final class ControladorGrabaciones {
         return fallo;
     }
 
-    Throwable detenerReproduccion(Throwable fallo) {
+    protected Throwable detenerReproduccion(Throwable fallo) {
         try {
             reproductor.detener();
         } catch (RuntimeException excepcion) {
@@ -176,6 +178,8 @@ final class ControladorGrabaciones {
                 try {
                     hilo.join();
                 } catch (InterruptedException excepcion) {
+                    LoggerPowerBand.getInstance().registrarExcepcionNoCapturada(
+                            excepcion, OrigenLog.CONTROLADOR);
                     interrumpido = true;
                 }
             }

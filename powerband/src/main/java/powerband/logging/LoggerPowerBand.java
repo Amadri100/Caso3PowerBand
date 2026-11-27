@@ -14,6 +14,7 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 
+import powerband.excepciones.ConstantesExcepciones;
 import powerband.util.Constantes;
 
 public final class LoggerPowerBand {
@@ -102,6 +103,27 @@ public final class LoggerPowerBand {
             throw new IllegalStateException(
                     "No se pudo escribir el log en " + carpetaLogs, excepcion);
         }
+    }
+
+    public void registrarONotificarFallo(Log evento) {
+        try {
+            registrar(evento);
+        } catch (IllegalStateException falloLog) {
+            System.err.println("No se pudo registrar el evento: " + evento);
+            falloLog.printStackTrace(System.err);
+        }
+    }
+
+    public void registrarExcepcionNoCapturada(
+            Throwable excepcion, OrigenLog origen) {
+        Objects.requireNonNull(excepcion, "excepcion");
+        Objects.requireNonNull(origen, "origen");
+        String mensaje = ConstantesExcepciones.MSG_EXCEPCION_NO_CAPTURADA;
+        if (excepcion.getMessage() != null && !excepcion.getMessage().isBlank()) {
+            mensaje += ": " + excepcion.getClass().getSimpleName()
+                    + ": " + excepcion.getMessage();
+        }
+        registrarONotificarFallo(Log.error(mensaje, origen, excepcion));
     }
 
     private boolean yaRegistrado(Throwable fallo, Set<Throwable> visitados) {

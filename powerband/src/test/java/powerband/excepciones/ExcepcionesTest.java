@@ -39,6 +39,12 @@ class ExcepcionesTest {
     }
 
     @Test
+    void exponeMensajeGenericoParaExcepcionesNoCapturadas() {
+        assertEquals("Excepcion no capturada",
+                ConstantesExcepciones.MSG_EXCEPCION_NO_CAPTURADA);
+    }
+
+    @Test
     void excepcionesExponenDatosYCausaCompatible() {
         ArchivoIncompletoException incompleta =
                 new ArchivoIncompletoException(

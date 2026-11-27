@@ -83,7 +83,7 @@ public class EntradaMicrofono extends Entrada {
                 info -> AudioSystem.getMixer(info).isLineSupported(infoLinea()));
     }
 
-    static List<DispositivoEntrada> dispositivosCompatibles(
+    protected static List<DispositivoEntrada> dispositivosCompatibles(
             List<Mixer.Info> dispositivos, Predicate<Mixer.Info> compatible) {
         List<Mixer.Info> compatibles = dispositivos.stream()
                 .filter(compatible)
@@ -132,7 +132,7 @@ public class EntradaMicrofono extends Entrada {
                 info -> AudioSystem.getMixer(info).isLineSupported(infoLinea()));
     }
 
-    static DisponibilidadDispositivo comprobarDisponibilidad(
+    protected static DisponibilidadDispositivo comprobarDisponibilidad(
             String id, List<Mixer.Info> dispositivos, Predicate<Mixer.Info> compatible) {
         List<Mixer.Info> coincidencias = dispositivos.stream()
                 .filter(info -> identificador(info).equals(id))

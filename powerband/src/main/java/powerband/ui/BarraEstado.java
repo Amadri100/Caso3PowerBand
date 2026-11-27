@@ -104,4 +104,9 @@ public final class BarraEstado extends JPanel
             case ERROR -> "Error";
         };
     }
+
+    @Override
+    public void dispositivoDesconectado(String instrumentoId) {
+ 
+    }
 }

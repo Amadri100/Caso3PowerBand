@@ -97,7 +97,7 @@ public class EntradaControl extends Entrada {
                 ControllerEnvironment.getDefaultEnvironment().getControllers());
     }
 
-    static List<DispositivoEntrada> dispositivosCompatibles(Controller[] controladores) {
+    protected static List<DispositivoEntrada> dispositivosCompatibles(Controller[] controladores) {
         List<Controller> controles = List.of(controladores).stream()
                 .filter(EntradaControl::esDispositivoValido).toList();
         Map<String, Long> cantidades = controles.stream()
@@ -139,7 +139,7 @@ public class EntradaControl extends Entrada {
                 ControllerEnvironment.getDefaultEnvironment().getControllers());
     }
 
-    static DisponibilidadDispositivo comprobarDisponibilidad(String id, Controller[] controladores) {
+    protected static DisponibilidadDispositivo comprobarDisponibilidad(String id, Controller[] controladores) {
         Controller coincidencia = null;
         for (Controller candidato : controladores) {
             if (esDispositivoValido(candidato) && identificador(candidato).equals(id)) {
@@ -174,7 +174,7 @@ public class EntradaControl extends Entrada {
         }
     }
 
-    void procesarEvento(Component[] componentes, Component componente, float valor) {
+    protected void procesarEvento(Component[] componentes, Component componente, float valor) {
         int indice = Arrays.asList(componentes).indexOf(componente);
         if (indice < 0) {
             throw new IllegalStateException("El evento pertenece a un componente desconocido");

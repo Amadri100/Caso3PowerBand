@@ -1,5 +1,8 @@
 package powerband.input;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
@@ -125,6 +128,58 @@ class EntradaTest {
         assertTrue(notificacion.await(1, TimeUnit.SECONDS));
         assertSame(causaOriginal, causaNotificada.get());
         entrada.close();
+    }
+
+    @Test
+    void notificaLosObservadoresAunqueFalleElLogYUnCallback() throws Exception {
+        EntradaDePrueba entrada = new EntradaDePrueba("prueba");
+        RuntimeException causa = new IllegalStateException("fallo de captura");
+        AtomicReference<Throwable> causaRecibida = new AtomicReference<>();
+        AtomicInteger callbackFinal = new AtomicInteger();
+        entrada.registrarCallbackDesconexion(ignorada -> {
+            throw new IllegalStateException("fallo del callback");
+        });
+        entrada.registrarObservadorDesconexion((origen, motivo, fallo) ->
+                causaRecibida.set(fallo));
+        entrada.registrarCallbackDesconexion((Runnable) callbackFinal::incrementAndGet);
+        Path rutaInvalida = Files.createFile(carpetaTemporal.resolve("archivo"));
+        LoggerPowerBand.cambiarPath(rutaInvalida);
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        PrintStream anterior = System.err;
+        try (PrintStream captura = new PrintStream(salida, true, StandardCharsets.UTF_8)) {
+            System.setErr(captura);
+            entrada.desconectar("simulada", causa);
+        } finally {
+            System.setErr(anterior);
+            LoggerPowerBand.cambiarPath(carpetaTemporal);
+        }
+
+        assertSame(causa, causaRecibida.get());
+        assertEquals(1, callbackFinal.get());
+        String errores = salida.toString(StandardCharsets.UTF_8);
+        assertTrue(errores.contains("No se pudo escribir el log"));
+        assertTrue(errores.contains("Desconexion de entrada prueba: simulada"));
+        assertTrue(errores.contains("fallo del callback"));
+    }
+
+    @Test
+    void notificaDesconexionSinExcepcionCuandoFallaElLog() throws Exception {
+        EntradaDePrueba entrada = new EntradaDePrueba("control");
+        AtomicInteger avisos = new AtomicInteger();
+        entrada.registrarObservadorDesconexion((origen, motivo, causa) ->
+                avisos.incrementAndGet());
+        LoggerPowerBand.cambiarPath(Files.createFile(carpetaTemporal.resolve("archivo")));
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        PrintStream anterior = System.err;
+        try (PrintStream captura = new PrintStream(salida, true, StandardCharsets.UTF_8)) {
+            System.setErr(captura);
+            entrada.desconectar("el control dejo de responder");
+        } finally {
+            System.setErr(anterior);
+            LoggerPowerBand.cambiarPath(carpetaTemporal);
+        }
+        assertEquals(1, avisos.get());
+        assertTrue(salida.toString(StandardCharsets.UTF_8).contains("No se pudo escribir el log"));
     }
 
     @Test

@@ -25,6 +25,22 @@ servidor iniciado en otro puerto, deténgalo desde SuperCollider antes de
 iniciar el servidor configurado en `myband.sc`. El estado **Conectado** de
 PowerBand no confirma que SuperCollider haya recibido los mensajes UDP.
 
+## Información de depuración
+
+En **Configuración**, active o desactive **Información de depuración del log**
+y pulse **Guardar**. La opción inicia desactivada en cada ejecución y afecta a
+los eventos posteriores; no desactiva el registro normal. Cuando está activa,
+el log añade el componente que registró el evento y, si hay una excepción, su
+tipo, causas y ubicación inicial. Cada evento ocupa una sola línea; los saltos
+de línea dentro de sus datos aparecen escapados.
+
+El log se escribe en `powerband/logs/powerband.log` relativo al directorio desde
+el que se inició la aplicación. La información de depuración puede incluir
+rutas y mensajes de error del entorno local; revísela antes de compartirla.
+Si no es posible escribir el log durante una notificación de desconexión o
+error, se informa el fallo por la salida de errores estándar y se continúa
+notificando a los observadores.
+
 ## Dispositivos por instrumento
 
 En **Instrumentos**, seleccione el instrumento, actualice la lista y asigne un

@@ -15,7 +15,7 @@ public final class DebugInfo {
         this.throwable = throwable;
     }
 
-    Throwable throwable() {
+    protected Throwable throwable() {
         return throwable;
     }
 

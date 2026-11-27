@@ -9,53 +9,53 @@ import powerband.sintetizadores.IdSintetizador;
 
 public interface FachadaControlador {
 
-    boolean conectar();
+    public boolean conectar();
 
-    void desconectar();
+    public void desconectar();
 
-    List<String> listarDispositivos();
+    public List<String> listarDispositivos();
 
-    List<DispositivoEntrada> listarDispositivos(String instrumentoId);
+    public List<DispositivoEntrada> listarDispositivos(String instrumentoId);
 
-    Component superficieTableta();
+    public Component superficieTableta();
 
-    void establecerModoDescubrimientoTableta(boolean activo);
+    public void establecerModoDescubrimientoTableta(boolean activo);
 
-    boolean asignarDispositivo(String instrumentoId, String dispositivoId);
+    public boolean asignarDispositivo(String instrumentoId, String dispositivoId);
 
-    boolean asignarSintetizador(
+    public boolean asignarSintetizador(
             String instrumentoId,
             IdSintetizador sintetizadorId);
 
-    List<String> listarInstrumentos();
+    public List<String> listarInstrumentos();
 
-    List<IdSintetizador> listarSintetizadores();
+    public List<IdSintetizador> listarSintetizadores();
 
-    Map<String, String> dispositivoPorInstrumento();
+    public Map<String, String> dispositivoPorInstrumento();
 
-    Map<String, List<IdSintetizador>> sintetizadoresPorInstrumento();
+    public Map<String, List<IdSintetizador>> sintetizadoresPorInstrumento();
 
-    boolean reemplazarSintetizadores(
+    public boolean reemplazarSintetizadores(
             String instrumentoId,
             List<IdSintetizador> sintetizadorIds);
 
-    Map<String, Object> opcionesConfigurables();
+    public Map<String, Object> opcionesConfigurables();
 
-    Object consultarOpcion(String clave);
+    public Object consultarOpcion(String clave);
 
-    void establecerOpcion(String clave, Object valor);
+    public void establecerOpcion(String clave, Object valor);
 
-    void iniciarGrabacion();
+    public void iniciarGrabacion();
 
-    void detenerGrabacion(String nombre);
+    public void detenerGrabacion(String nombre);
 
-    List<String> listarSesiones();
+    public List<String> listarSesiones();
 
-    List<String> buscarSesiones(String nombre);
+    public List<String> buscarSesiones(String nombre);
 
-    boolean reproducirSesion(String nombre);
+    public boolean reproducirSesion(String nombre);
 
-    void registrarObservadorEstado(ObservadorEstado observador);
+    public void registrarObservadorEstado(ObservadorEstado observador);
 
-    void retirarObservadorEstado(ObservadorEstado observador);
+    public void retirarObservadorEstado(ObservadorEstado observador);
 }

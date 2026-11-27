@@ -59,7 +59,7 @@ public final class Log {
         return error(texto, origen, throwable);
     }
 
-    Throwable throwable() {
+    protected Throwable throwable() {
         return debugInfo == null ? null : debugInfo.throwable();
     }
 

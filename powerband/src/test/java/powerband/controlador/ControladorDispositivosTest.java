@@ -23,11 +23,38 @@ import powerband.util.DispositivoEntrada;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ControladorDispositivosTest {
+
+    @Test
+    void iniciarAsignaPianoPredeterminadoAlControl() throws Exception {
+        BusComandos bus = new BusComandos();
+        Microfono microfono = new Microfono(null, bus);
+        Control control = new Control(null, bus);
+        Tableta tableta = new Tableta(null, bus);
+        ControladorDispositivos controlador = new ControladorDispositivos(
+                microfono, control, tableta,
+                entradaMicrofonoInactiva(microfono),
+                entradaControlInactivo(control),
+                entradaTabletaInactiva(tableta),
+                new HashMap<>(),
+                instrumento -> List.of(),
+                (mensaje, causa) -> { },
+                (entrada, motivo, causa) -> { });
+
+        controlador.iniciar();
+
+        assertNotNull(control.sintetizador());
+        assertNotNull(microfono.sintetizador());
+        assertNotNull(tableta.sintetizador());
+        assertEquals(List.of(powerband.sintetizadores.IdSintetizador.PIANO),
+                controlador.sintetizadoresPorInstrumento().get("control"));
+        controlador.liberar(null);
+    }
 
     @Test
     void iniciarEnviaTonoDeVerificacionConTresSintetizadores()

@@ -28,6 +28,8 @@ import powerband.instrumentos.Control;
 import powerband.instrumentos.Instrumento;
 import powerband.instrumentos.Microfono;
 import powerband.instrumentos.Tableta;
+import powerband.logging.LoggerPowerBand;
+import powerband.logging.OrigenLog;
 import powerband.sintetizadores.BandClient;
 import powerband.sintetizadores.BajoSintetizador;
 import powerband.sintetizadores.IdSintetizador;
@@ -66,7 +68,7 @@ final class ControladorDispositivos {
     private final BiConsumer<String, Throwable> notificarError;
     private volatile BandClient bandClient;
 
-    ControladorDispositivos(
+    protected ControladorDispositivos(
             Microfono microfono, Control control, Tableta tableta,
             EntradaMicrofono entradaMicrofono, EntradaControl entradaControl,
             EntradaTableta entradaTableta,
@@ -78,7 +80,7 @@ final class ControladorDispositivos {
                 sintetizadores, proveedorDispositivos, null, notificarError, observadorDesconexion);
     }
 
-    ControladorDispositivos(
+    protected ControladorDispositivos(
             Microfono microfono, Control control, Tableta tableta,
             EntradaMicrofono entradaMicrofono, EntradaControl entradaControl,
             EntradaTableta entradaTableta,
@@ -106,12 +108,12 @@ final class ControladorDispositivos {
         entradaTableta.registrarObservadorRetiro(this::programarRetiroTableta);
     }
 
-    List<String> listarDispositivos() {
+    protected List<String> listarDispositivos() {
         return listarDispositivos("control").stream()
                 .map(DispositivoEntrada::id).toList();
     }
 
-    List<DispositivoEntrada> listarDispositivos(String instrumentoId) {
+    protected List<DispositivoEntrada> listarDispositivos(String instrumentoId) {
         if (instrumentoId == null || !INSTRUMENTOS.contains(instrumentoId)) {
             IllegalArgumentException fallo = new IllegalArgumentException("Instrumento no válido");
             notificarError.accept(fallo.getMessage(), fallo);
@@ -141,7 +143,7 @@ final class ControladorDispositivos {
         };
     }
 
-    java.awt.Component superficieTableta() {
+    protected java.awt.Component superficieTableta() {
         return entradaTableta.superficie();
     }
 
@@ -158,6 +160,8 @@ final class ControladorDispositivos {
         try {
             disponibles = listarDispositivos(instrumentoId);
         } catch (RuntimeException excepcion) {
+            LoggerPowerBand.getInstance().registrarExcepcionNoCapturada(
+                    excepcion, OrigenLog.CONTROLADOR);
             return false;
         }
         if (disponibles.stream().noneMatch(dispositivo -> dispositivo.id().equals(dispositivoId))) {
@@ -371,21 +375,21 @@ final class ControladorDispositivos {
         return reemplazarSintetizadores(instrumentoId, List.of(sintetizadorId));
     }
 
-    List<String> listarInstrumentos() {
+    protected List<String> listarInstrumentos() {
         return INSTRUMENTOS;
     }
 
-    List<IdSintetizador> listarSintetizadores() {
+    protected List<IdSintetizador> listarSintetizadores() {
         return List.of(IdSintetizador.PIANO, IdSintetizador.BAJO, IdSintetizador.ORGANO);
     }
 
-    Map<String, String> dispositivoPorInstrumento() {
+    protected Map<String, String> dispositivoPorInstrumento() {
         synchronized (bloqueoAsignaciones) {
             return Collections.unmodifiableMap(new LinkedHashMap<>(asignacionesDispositivo));
         }
     }
 
-    Map<String, List<IdSintetizador>> sintetizadoresPorInstrumento() {
+    protected Map<String, List<IdSintetizador>> sintetizadoresPorInstrumento() {
         synchronized (bloqueoAsignaciones) {
             Map<String, List<IdSintetizador>> copia = new LinkedHashMap<>();
             for (Map.Entry<String, List<IdSintetizador>> asignacion
@@ -443,18 +447,26 @@ final class ControladorDispositivos {
     }
 
     private void asegurarSintetizadores() throws IOException {
-        if (sintetizadores.size() == 3) {
-            return;
+        if (sintetizadores.size() != 3) {
+            BandClient nuevoCliente = new BandClient(Configuraciones.getInstance());
+            Map<IdSintetizador, Sintetizador> nuevos = new LinkedHashMap<>();
+            nuevos.put(IdSintetizador.PIANO, new PianoSintetizador(nuevoCliente));
+            nuevos.put(IdSintetizador.BAJO, new BajoSintetizador(nuevoCliente));
+            nuevos.put(IdSintetizador.ORGANO, new OrganoSintetizador(nuevoCliente));
+            bandClient = nuevoCliente;
+            sintetizadores.clear();
+            sintetizadores.putAll(nuevos);
         }
-        BandClient nuevoCliente = new BandClient(Configuraciones.getInstance());
-        Map<IdSintetizador, Sintetizador> nuevos = new LinkedHashMap<>();
-        nuevos.put(IdSintetizador.PIANO, new PianoSintetizador(nuevoCliente));
-        nuevos.put(IdSintetizador.BAJO, new BajoSintetizador(nuevoCliente));
-        nuevos.put(IdSintetizador.ORGANO, new OrganoSintetizador(nuevoCliente));
-        bandClient = nuevoCliente;
-        sintetizadores.clear();
-        sintetizadores.putAll(nuevos);
         synchronized (bloqueoAsignaciones) {
+            Sintetizador piano = sintetizadores.get(IdSintetizador.PIANO);
+            for (String instrumentoId : INSTRUMENTOS) {
+                if (!asignacionesSintetizador.containsKey(instrumentoId)) {
+                    instrumentos.get(instrumentoId).reemplazarSintetizadores(
+                            List.of(piano));
+                    asignacionesSintetizador.put(
+                            instrumentoId, List.of(IdSintetizador.PIANO));
+                }
+            }
             for (Map.Entry<String, List<IdSintetizador>> asignacion
                     : asignacionesSintetizador.entrySet()) {
                 Instrumento instrumento = instrumentos.get(asignacion.getKey());
@@ -485,7 +497,7 @@ final class ControladorDispositivos {
                 || entradaControl.estaActiva() || entradaTableta.estaActiva();
     }
 
-    Throwable detenerEntradas(Throwable fallo) {
+    protected Throwable detenerEntradas(Throwable fallo) {
         fallo = detenerEntrada(fallo, entradaMicrofono, "micrófono");
         fallo = detenerEntrada(fallo, entradaControl, "control");
         return detenerEntrada(fallo, entradaTableta, "tableta");
@@ -501,7 +513,7 @@ final class ControladorDispositivos {
         return fallo;
     }
 
-    Throwable liberar(Throwable fallo) {
+    protected Throwable liberar(Throwable fallo) {
         for (Sintetizador sintetizador : List.copyOf(sintetizadores.values())) {
             try {
                 sintetizador.liberarTodasLasNotas();

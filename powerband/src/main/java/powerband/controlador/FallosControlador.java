@@ -5,7 +5,7 @@ final class FallosControlador {
     private FallosControlador() {
     }
 
-    static Throwable agregar(Throwable principal, String mensaje, Throwable causa) {
+    protected static Throwable agregar(Throwable principal, String mensaje, Throwable causa) {
         RuntimeException contextual = new IllegalStateException(mensaje, causa);
         if (principal == null) {
             return contextual;

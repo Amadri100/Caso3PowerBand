@@ -608,7 +608,7 @@ public final class Controlador implements FachadaControlador {
             try {
                 observador.estadoCambiado(nuevoEstado);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrar(Log.error(
+                LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                         "Fallo al notificar un estado a un observador: "
                                 + excepcion, OrigenLog.CONTROLADOR, excepcion));
             }
@@ -628,7 +628,7 @@ public final class Controlador implements FachadaControlador {
             try {
                 observador.dispositivoDesconectado(instrumento);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrar(Log.error(
+                LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                         "Fallo al notificar la desconexión a un observador: " + excepcion,
                         OrigenLog.CONTROLADOR, excepcion));
             }
@@ -638,7 +638,7 @@ public final class Controlador implements FachadaControlador {
     private void notificarError(
             String mensaje, Throwable causa, boolean registrar) {
         if (registrar) {
-            LoggerPowerBand.getInstance().registrar(Log.error(
+            LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                     mensaje + ": " + causa, OrigenLog.CONTROLADOR, causa));
         }
         List<ObservadorEstado> copia;
@@ -649,7 +649,7 @@ public final class Controlador implements FachadaControlador {
             try {
                 observador.errorNotificado(mensaje, causa);
             } catch (RuntimeException excepcion) {
-                LoggerPowerBand.getInstance().registrar(Log.error(
+                LoggerPowerBand.getInstance().registrarONotificarFallo(Log.error(
                         "Fallo al notificar un error a un observador: "
                                 + excepcion, OrigenLog.CONTROLADOR, excepcion));
             }

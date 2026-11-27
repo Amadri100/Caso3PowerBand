@@ -2,10 +2,12 @@ package powerband.controlador;
 
 public interface ObservadorEstado {
 
-    void estadoCambiado(EstadoControlador estado);
+    public void estadoCambiado(EstadoControlador estado);
 
-    void errorNotificado(String mensaje, Throwable causa);
+    public void errorNotificado(String mensaje, Throwable causa);
 
-    default void dispositivoDesconectado(String instrumentoId) {
+    //Default permite agregar una implementación.
+    public default void dispositivoDesconectado(String instrumentoId) {
+        
     }
 }

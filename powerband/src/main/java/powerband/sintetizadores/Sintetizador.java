@@ -4,9 +4,9 @@ import powerband.comandos.TipoAccion;
 
 public interface Sintetizador {
 
-    IdSintetizador id();
+    public IdSintetizador id();
 
-    void ejecutar(TipoAccion tipoAccion, double... parametros);
+    public void ejecutar(TipoAccion tipoAccion, double... parametros);
 
-    void liberarTodasLasNotas();
+    public void liberarTodasLasNotas();
 }

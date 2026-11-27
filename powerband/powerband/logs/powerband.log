@@ -1,1 +1,0 @@
-2026-11-26T19:35:03.152070300Z [error] Desconexion de entrada microfono: El microfono no tiene un sintetizador asignado origen=INPUT throwable=java.lang.IllegalStateException: El microfono no tiene un sintetizador asignado ubicacionError=powerband.instrumentos.Microfono.convertirFrecuencia(Microfono.java:27)
