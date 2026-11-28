@@ -1,6 +1,7 @@
 package powerband.comandos;
 
 import powerband.sintetizadores.Sintetizador;
+import powerband.sintetizadores.ParametrosNota;
 
 public interface Comando {
 
@@ -11,4 +12,12 @@ public interface Comando {
     public TipoAccion tipoAccion();
 
     double[] parametros();
+
+    public default ParametrosNota parametrosNota() {
+        double[] datos = parametros();
+        if (tipoAccion() == TipoAccion.PUNTUAL) {
+            return ParametrosNota.desdeParametrosPuntuales(datos);
+        }
+        return ParametrosNota.desdeParametrosSostenidos(datos);
+    }
 }

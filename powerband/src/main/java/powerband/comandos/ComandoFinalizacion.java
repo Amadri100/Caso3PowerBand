@@ -1,6 +1,7 @@
 package powerband.comandos;
 
 import powerband.sintetizadores.Sintetizador;
+import powerband.sintetizadores.ParametrosNota;
 
 public final class ComandoFinalizacion extends ComandoSostenido {
 
@@ -9,6 +10,13 @@ public final class ComandoFinalizacion extends ComandoSostenido {
                                double... parametros) {
         super(destino, TipoAccion.FINALIZACION,
                 identificadorAccion, parametros);
+    }
+
+    public ComandoFinalizacion(Sintetizador destino,
+                               String identificadorAccion,
+                               ParametrosNota parametrosNota) {
+        super(destino, TipoAccion.FINALIZACION,
+                identificadorAccion, parametrosNota);
     }
 
     public ComandoFinalizacion(Sintetizador destino, double... parametros) {

@@ -1,12 +1,19 @@
 package powerband.comandos;
 
 import powerband.sintetizadores.Sintetizador;
+import powerband.sintetizadores.ParametrosNota;
 
 public final class ComandoInicio extends ComandoSostenido {
 
     public ComandoInicio(Sintetizador destino, String identificadorAccion,
                          double... parametros) {
         super(destino, TipoAccion.INICIO, identificadorAccion, parametros);
+    }
+
+    public ComandoInicio(Sintetizador destino, String identificadorAccion,
+                         ParametrosNota parametrosNota) {
+        super(destino, TipoAccion.INICIO,
+                identificadorAccion, parametrosNota);
     }
 
     public ComandoInicio(Sintetizador destino, double... parametros) {

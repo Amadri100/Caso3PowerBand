@@ -27,7 +27,18 @@ public final class FabricaComandosGrabados {
                             + idSintetizador);
         }
 
-        return new ComandoReconstruido(destino, grabado.tipoAccion(),
-                grabado.parametros());
+        return switch (grabado.tipoAccion()) {
+            case PUNTUAL ->
+                    new ComandoPuntual(destino, grabado.parametros());
+            case INICIO ->
+                    new ComandoInicio(destino,
+                            "grabado-inicio", grabado.parametros());
+            case ACTUALIZACION ->
+                    new ComandoActualizacion(destino,
+                            "grabado-actualizacion", grabado.parametros());
+            case FINALIZACION ->
+                    new ComandoFinalizacion(destino,
+                            "grabado-finalizacion", grabado.parametros());
+        };
     }
 }

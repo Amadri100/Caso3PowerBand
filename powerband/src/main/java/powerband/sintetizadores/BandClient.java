@@ -38,6 +38,8 @@ public class BandClient implements AutoCloseable {
     private int nextNodeId = FIRST_NODE_ID;
     private final Map<String, Map<Integer, Integer>> nodosActivos =
             new HashMap<>();
+    private final Map<String, Map<String, Integer>> vocesActivas =
+            new HashMap<>();
 
     public BandClient() throws IOException {
         this(Configuraciones.getInstance());
@@ -70,6 +72,9 @@ public class BandClient implements AutoCloseable {
         nodosActivos.put(PIANO, new HashMap<>());
         nodosActivos.put(BAJO, new HashMap<>());
         nodosActivos.put(ORGANO, new HashMap<>());
+        vocesActivas.put(PIANO, new HashMap<>());
+        vocesActivas.put(BAJO, new HashMap<>());
+        vocesActivas.put(ORGANO, new HashMap<>());
     }
 
     // ------------------------------------------------------------ synth API
@@ -167,6 +172,63 @@ public class BandClient implements AutoCloseable {
         detenerNodo(PIANO, note);
     }
 
+    public synchronized void startPiano(
+            String voiceId, int note, boolean major, float amplitude)
+            throws IOException {
+        validarVoiceId(voiceId);
+        validarNotaMidi(note);
+        validarAmplitud(amplitude);
+        stopPiano(voiceId);
+        validarCapacidadVoz(PIANO, voiceId);
+        int id = sNew("classicPiano",
+                "note", note,
+                "durMs", Constantes.DURACION_MINIMA_MS,
+                "third", major ? 4 : 3,
+                "sostenida", 1,
+                "gate", 1,
+                "amp", amplitudEfectiva(amplitude));
+        vocesActivas.get(PIANO).put(voiceId, id);
+    }
+
+    public synchronized void setPianoNote(
+            String voiceId, int newNote) throws IOException {
+        validarVoiceId(voiceId);
+        validarNotaMidi(newNote);
+        Integer id = vocesActivas.get(PIANO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "note", newNote);
+        }
+    }
+
+    public synchronized void setPianoThird(
+            String voiceId, int third) throws IOException {
+        validarVoiceId(voiceId);
+        if (third != Constantes.TERCERA_MENOR_SEMITONOS
+                && third != Constantes.TERCERA_MAYOR_SEMITONOS) {
+            throw new IllegalArgumentException(
+                    "La tercera del piano debe ser menor (3) o mayor (4)");
+        }
+        Integer id = vocesActivas.get(PIANO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "third", third);
+        }
+    }
+
+    public synchronized void setPianoAmplitude(
+            String voiceId, float amplitude) throws IOException {
+        validarVoiceId(voiceId);
+        validarAmplitud(amplitude);
+        Integer id = vocesActivas.get(PIANO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "amp", amplitudEfectiva(amplitude));
+        }
+    }
+
+    public synchronized void stopPiano(String voiceId)
+            throws IOException {
+        detenerVoz(PIANO, voiceId);
+    }
+
     public synchronized void startBass(int note) throws IOException {
         startBass(note, 0.5f);
     }
@@ -212,6 +274,47 @@ public class BandClient implements AutoCloseable {
 
     public synchronized void stopBass(int note) throws IOException {
         detenerNodo(BAJO, note);
+    }
+
+    public synchronized void startBass(
+            String voiceId, int note, float amplitude) throws IOException {
+        validarVoiceId(voiceId);
+        validarNotaMidi(note);
+        validarAmplitud(amplitude);
+        stopBass(voiceId);
+        validarCapacidadVoz(BAJO, voiceId);
+        int id = sNew("stringBass",
+                "note", note,
+                "durMs", Constantes.DURACION_MINIMA_MS,
+                "sostenida", 1,
+                "gate", 1,
+                "amp", amplitudEfectiva(amplitude));
+        vocesActivas.get(BAJO).put(voiceId, id);
+    }
+
+    public synchronized void setBassNote(
+            String voiceId, int newNote) throws IOException {
+        validarVoiceId(voiceId);
+        validarNotaMidi(newNote);
+        Integer id = vocesActivas.get(BAJO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "note", newNote);
+        }
+    }
+
+    public synchronized void setBassAmplitude(
+            String voiceId, float amplitude) throws IOException {
+        validarVoiceId(voiceId);
+        validarAmplitud(amplitude);
+        Integer id = vocesActivas.get(BAJO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "amp", amplitudEfectiva(amplitude));
+        }
+    }
+
+    public synchronized void stopBass(String voiceId)
+            throws IOException {
+        detenerVoz(BAJO, voiceId);
     }
     // Para poder "escuchar" la conexion el sistema manda un tono 
     // Si no se escucha el tono no hubo conexion
@@ -339,6 +442,51 @@ public class BandClient implements AutoCloseable {
         }
     }
 
+    public synchronized void startOrgan(
+            String voiceId, int note, float[] ratios, float[] amps)
+            throws IOException {
+        validarVoiceId(voiceId);
+        validarNotaMidi(note);
+        validarOrganPartials(ratios, amps);
+        stopOrgan(voiceId);
+        validarCapacidadVoz(ORGANO, voiceId);
+        int id = sNew("organ70s",
+                "freq", midiToFreq(note),
+                "amp", amplitudEfectiva(0.3f),
+                "r1", ratios[0],
+                "r2", ratios[1],
+                "r3", ratios[2],
+                "a1", amplitudEfectiva(amps[0]),
+                "a2", amplitudEfectiva(amps[1]),
+                "a3", amplitudEfectiva(amps[2]));
+        vocesActivas.get(ORGANO).put(voiceId, id);
+    }
+
+    public synchronized void setOrganNote(
+            String voiceId, int newNote) throws IOException {
+        validarVoiceId(voiceId);
+        validarNotaMidi(newNote);
+        Integer id = vocesActivas.get(ORGANO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "freq", midiToFreq(newNote));
+        }
+    }
+
+    public synchronized void setOrganAmplitude(
+            String voiceId, float amplitude) throws IOException {
+        validarVoiceId(voiceId);
+        validarAmplitud(amplitude);
+        Integer id = vocesActivas.get(ORGANO).get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "amp", amplitudEfectiva(amplitude));
+        }
+    }
+
+    public synchronized void stopOrgan(String voiceId)
+            throws IOException {
+        detenerVoz(ORGANO, voiceId);
+    }
+
     public synchronized void allNotesOff() throws IOException {
         clearAllSynths();
     }
@@ -360,6 +508,18 @@ public class BandClient implements AutoCloseable {
                 new ArrayList<>(nodosActivos.get(clave).keySet())) {
             try {
                 detenerNodo(clave, note);
+            } catch (IOException fallo) {
+                if (falloEnvio == null) {
+                    falloEnvio = fallo;
+                } else {
+                    falloEnvio.addSuppressed(fallo);
+                }
+            }
+        }
+        for (String voiceId :
+                new ArrayList<>(vocesActivas.get(clave).keySet())) {
+            try {
+                detenerVoz(clave, voiceId);
             } catch (IOException fallo) {
                 if (falloEnvio == null) {
                     falloEnvio = fallo;
@@ -405,6 +565,12 @@ public class BandClient implements AutoCloseable {
         return nodosActivos.get(ORGANO).containsKey(note);
     }
 
+    public synchronized boolean isVoiceActive(String voiceId) {
+        validarVoiceId(voiceId);
+        return vocesActivas.values().stream()
+                .anyMatch(voces -> voces.containsKey(voiceId));
+    }
+
     private void registrarNota(String synthName, int note, int nodeId) {
         validarCapacidad(synthName, note);
         nodosActivos.get(synthName).put(note, nodeId);
@@ -431,6 +597,55 @@ public class BandClient implements AutoCloseable {
         if (id != null) {
             send("/n_set", id, "gate", 0);
             activos.remove(note, id);
+        }
+    }
+
+    private void validarVoiceId(String voiceId) {
+        if (voiceId == null || voiceId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El identificador de voz no puede estar vacio");
+        }
+    }
+
+    private void validarCapacidadVoz(String synthName, String voiceId) {
+        Map<String, Integer> activos = vocesActivas.get(synthName);
+        if (activos.containsKey(voiceId)) {
+            return;
+        }
+        int total = vocesActivas.values().stream()
+                .mapToInt(Map::size)
+                .sum();
+        if (total >= Constantes.MAXIMO_NODOS_SOSTENIDOS) {
+            throw new IllegalStateException(
+                    "Se alcanzó el máximo de nodos sostenidos");
+        }
+    }
+
+    private synchronized void detenerVoz(
+            String synthName, String voiceId) throws IOException {
+        Map<String, Integer> activos = vocesActivas.get(synthName);
+        Integer id = activos.get(voiceId);
+        if (id != null) {
+            send("/n_set", id, "gate", 0);
+            activos.remove(voiceId, id);
+        }
+    }
+
+    private void validarOrganPartials(float[] ratios, float[] amps) {
+        if (ratios == null || amps == null
+                || ratios.length != Constantes.CANTIDAD_PARCIALES_ORGANO
+                || amps.length != Constantes.CANTIDAD_PARCIALES_ORGANO) {
+            throw new IllegalArgumentException(
+                    "El organo necesita exactamente 3 razones y 3 amplitudes");
+        }
+        for (int indice = 0;
+                indice < Constantes.CANTIDAD_PARCIALES_ORGANO;
+                indice++) {
+            if (!Float.isFinite(ratios[indice]) || ratios[indice] <= 0.0f) {
+                throw new IllegalArgumentException(
+                        "Las razones del organo deben ser positivas y finitas");
+            }
+            validarAmplitud(amps[indice]);
         }
     }
 

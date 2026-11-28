@@ -8,11 +8,11 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import powerband.comandos.TipoAccion;
 import powerband.util.Constantes;
 
-public final class OrganoSintetizador extends AdaptadorBandClient {
+public final class OrganoSintetizador implements Sintetizador {
 
+    private final BandClient bandClient;
     private final Map<Integer, NotaActiva> notasActivas = new HashMap<>();
     private final Supplier<ProgramadorNotas> fabricaProgramador;
     private ProgramadorNotas programador;
@@ -23,7 +23,7 @@ public final class OrganoSintetizador extends AdaptadorBandClient {
 
     protected OrganoSintetizador(BandClient bandClient,
                        Supplier<ProgramadorNotas> fabricaProgramador) {
-        super(bandClient);
+        this.bandClient = Objects.requireNonNull(bandClient, "bandClient");
         this.fabricaProgramador = Objects.requireNonNull(
                 fabricaProgramador, "fabricaProgramador");
     }
@@ -34,17 +34,121 @@ public final class OrganoSintetizador extends AdaptadorBandClient {
     }
 
     @Override
-    public synchronized void ejecutar(
-            TipoAccion tipoAccion, double... parametros) {
-        if (tipoAccion == TipoAccion.INICIO) {
-            iniciarNota(parametros);
-        } else if (tipoAccion == TipoAccion.FINALIZACION) {
-            finalizarNota(parametros);
-        } else if (tipoAccion == TipoAccion.PUNTUAL) {
-            iniciarNotaPuntual(parametros);
-        } else {
-            rechazar("El organo no admite la accion " + tipoAccion);
+    public BandClient bandClient() {
+        return bandClient;
+    }
+
+    @Override
+    public synchronized void ejecutarPuntual(double... parametros) {
+        iniciarNotaPuntual(parametros);
+    }
+
+    @Override
+    public synchronized void ejecutarPuntual(
+            ParametrosNota parametros) {
+        Objects.requireNonNull(parametros, "parametros");
+        if (parametros.duracionMs() == null) {
+            throw new IllegalArgumentException(
+                    "Una ejecución puntual requiere duración");
         }
+        iniciarNotaPuntual(new double[] {
+                parametros.notaMidi(),
+                parametros.duracionMs()
+        });
+    }
+
+    @Override
+    public synchronized void iniciar(String voiceId,
+                                     double... parametros) {
+        validarIdentificadorVoz(voiceId);
+        boolean personalizada = parametros != null
+                && parametros.length == 1 + 2
+                        * Constantes.CANTIDAD_PARCIALES_ORGANO;
+        if (!personalizada && (parametros == null
+                || parametros.length != 1)) {
+            rechazar("El inicio del organo requiere una nota y, "
+                    + "opcionalmente, tres razones y tres amplitudes");
+        }
+        int nota = notaMidi(parametros[0], "organo");
+        float[] razones = new float[] {
+                (float) Constantes.RAZON_ORGANO_1,
+                (float) Constantes.RAZON_ORGANO_2,
+                (float) Constantes.RAZON_ORGANO_3
+        };
+        float[] amplitudes = new float[] {
+                (float) Constantes.AMPLITUD_ORGANO_1,
+                (float) Constantes.AMPLITUD_ORGANO_2,
+                (float) Constantes.AMPLITUD_ORGANO_3
+        };
+        if (personalizada) {
+            for (int indice = 0;
+                    indice < Constantes.CANTIDAD_PARCIALES_ORGANO;
+                    indice++) {
+                razones[indice] = razonParcial(
+                        parametros[indice + 1], indice + 1);
+                amplitudes[indice] = amplitudParcial(
+                        parametros[indice + 1
+                                + Constantes.CANTIDAD_PARCIALES_ORGANO],
+                        indice + 1);
+            }
+        }
+        enviar("iniciar la nota sostenida del organo",
+                () -> bandClient.startOrgan(
+                        voiceId, nota, razones, amplitudes));
+    }
+
+    @Override
+    public synchronized void iniciar(
+            String voiceId, ParametrosNota parametros) {
+        validarIdentificadorVoz(voiceId);
+        Objects.requireNonNull(parametros, "parametros");
+        float[] razones = new float[] {
+                (float) Constantes.RAZON_ORGANO_1,
+                (float) Constantes.RAZON_ORGANO_2,
+                (float) Constantes.RAZON_ORGANO_3
+        };
+        float[] amplitudes = new float[] {
+                (float) parametros.amplitud(),
+                (float) Constantes.AMPLITUD_ORGANO_2,
+                (float) Constantes.AMPLITUD_ORGANO_3
+        };
+        enviar("iniciar la nota sostenida del organo",
+                () -> bandClient.startOrgan(
+                        voiceId,
+                        parametros.notaMidi(),
+                        razones,
+                        amplitudes));
+    }
+
+    @Override
+    public synchronized void actualizar(String voiceId,
+                                        double... parametros) {
+        validarIdentificadorVoz(voiceId);
+        validarCantidad(parametros, 1, 1, "organo");
+        int notaNueva = notaMidi(parametros[0], "organo");
+        enviar("actualizar la nota del organo",
+                () -> bandClient.setOrganNote(voiceId, notaNueva));
+    }
+
+    @Override
+    public synchronized void actualizar(
+            String voiceId, ParametrosNota parametros) {
+        validarIdentificadorVoz(voiceId);
+        Objects.requireNonNull(parametros, "parametros");
+        enviar("actualizar la nota del organo",
+                () -> bandClient.setOrganNote(
+                        voiceId, parametros.notaMidi()));
+        enviar("actualizar la amplitud del organo",
+                () -> bandClient.setOrganAmplitude(
+                        voiceId, (float) parametros.amplitud()));
+    }
+
+    @Override
+    public synchronized void finalizar(String voiceId,
+                                       double... parametros) {
+        validarIdentificadorVoz(voiceId);
+        enviar("finalizar la nota del organo",
+                () -> bandClient.stopOrgan(voiceId));
     }
 
     @Override
@@ -68,43 +172,26 @@ public final class OrganoSintetizador extends AdaptadorBandClient {
             }
         }
         cerrarProgramadorSiNoHayFinalizaciones();
+        try {
+            enviar("liberar todas las voces del organo",
+                    () -> bandClient.clearSynth("organo"));
+        } catch (IllegalStateException fallo) {
+            if (falloTotal == null) {
+                falloTotal = fallo;
+            } else {
+                falloTotal.addSuppressed(fallo);
+            }
+        }
         if (falloTotal != null) {
             throw falloTotal;
         }
     }
 
-    private void iniciarNota(double[] parametros) {
-        boolean personalizada = parametros != null
-                && parametros.length == 1 + 2 * Constantes.CANTIDAD_PARCIALES_ORGANO;
-        if (!personalizada && (parametros == null || parametros.length != 1)) {
-            rechazar("El inicio del organo requiere una nota y, opcionalmente, "
-                    + "tres razones y tres amplitudes");
+    private void validarIdentificadorVoz(String voiceId) {
+        if (voiceId == null || voiceId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El identificador de voz no puede estar vacio");
         }
-
-        int nota = notaMidi(parametros[0], "organo");
-        float[] razones = new float[Constantes.CANTIDAD_PARCIALES_ORGANO];
-        float[] amplitudes = new float[Constantes.CANTIDAD_PARCIALES_ORGANO];
-        if (personalizada) {
-            for (int indice = 0; indice < Constantes.CANTIDAD_PARCIALES_ORGANO; indice++) {
-                razones[indice] = razonParcial(parametros[indice + 1], indice + 1);
-                amplitudes[indice] = amplitudParcial(
-                        parametros[indice + 1 + Constantes.CANTIDAD_PARCIALES_ORGANO],
-                        indice + 1);
-            }
-        } else {
-            razones = new float[] {
-                    (float) Constantes.RAZON_ORGANO_1,
-                    (float) Constantes.RAZON_ORGANO_2,
-                    (float) Constantes.RAZON_ORGANO_3
-            };
-            amplitudes = new float[] {
-                    (float) Constantes.AMPLITUD_ORGANO_1,
-                    (float) Constantes.AMPLITUD_ORGANO_2,
-                    (float) Constantes.AMPLITUD_ORGANO_3
-            };
-        }
-
-        iniciarNota(nota, razones, amplitudes, null);
     }
 
     private void iniciarNotaPuntual(double[] parametros) {
@@ -139,19 +226,6 @@ public final class OrganoSintetizador extends AdaptadorBandClient {
         notasActivas.put(nota, activa);
         if (duracionMs != null) {
             programarFinalizacion(nota, activa, duracionMs);
-        }
-    }
-
-    private void finalizarNota(double[] parametros) {
-        validarCantidad(parametros, 1, 1, "organo");
-        int nota = notaMidi(parametros[0], "organo");
-        NotaActiva activa = notasActivas.get(nota);
-        if (activa != null) {
-            enviar("finalizar la nota " + nota + " del organo",
-                    () -> bandClient.noteOff(nota));
-            cancelarFinalizacion(activa);
-            notasActivas.remove(nota, activa);
-            cerrarProgramadorSiNoHayFinalizaciones();
         }
     }
 

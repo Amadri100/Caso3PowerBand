@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import powerband.logging.LoggerPowerBand;
 import powerband.sintetizadores.IdSintetizador;
 import powerband.sintetizadores.Sintetizador;
+import powerband.sintetizadores.ParametrosNota;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,6 +67,23 @@ class ComandosTest {
         assertTrue(inicio.toString().contains("identificadorAccion=nota-1"));
         assertThrows(IllegalArgumentException.class,
                 () -> new ComandoInicio(sintetizador, " ", 60.0));
+    }
+
+    @Test
+    void parametrosNotaTipadosValidanYSeEntreganAlComando() {
+        SintetizadorDePrueba sintetizador = new SintetizadorDePrueba();
+        ParametrosNota parametros =
+                new ParametrosNota(60, 500, 0.75);
+
+        new ComandoPuntual(sintetizador, parametros).ejecutar();
+
+        assertEquals(TipoAccion.PUNTUAL, sintetizador.tipoAccion);
+        assertArrayEquals(new double[] {60.0, 500.0, 0.75},
+                sintetizador.parametros);
+        assertThrows(IllegalArgumentException.class,
+                () -> new ParametrosNota(128));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ParametrosNota(60, 500, 1.5));
     }
 
     @Test
