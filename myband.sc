@@ -27,6 +27,8 @@ Server.default = Server(
 
 ~myband = ();
 
+~myband[\activePiano] = Dictionary.new;
+~myband[\activeBass] = Dictionary.new;
 ~myband[\active] = Dictionary.new;   // midi note -> running organ synth
 
 // ---------------------------------------------------------------- SynthDefs
@@ -35,16 +37,19 @@ Server.default = Server(
 	// 1) Classic piano: chord built from one fundamental note.
 	//    Chord = root, third (major=4 / minor=3), fifth, octave.
 	//    Attack and decay are hardcoded; durMs is the total length.
-	SynthDef(\classicPiano, { |out = 0, note = 48, durMs = 1500, amp = 0.3, third = 4|
-		var atk = 0.005, dur, freqs, env, tone, hammer, cutoff;
+	SynthDef(\classicPiano, { |out = 0, note = 48, durMs = 1500, amp = 0.3, third = 4,
+		sostenida = 0, gate = 1|
+		var atk = 0.005, dur, freqs, fixedEnv, sustainedEnv, env, tone, hammer, cutoff;
 		dur = durMs / 1000;
 		freqs = (note + [0, third, 7, 12]).midicps;
 
 		// percussive envelope: fast attack, exponential-ish decay for the rest
-		env = EnvGen.ar(
+		fixedEnv = EnvGen.ar(
 			Env([0, 1, 0], [atk, (dur - atk).max(0.01)], [-2, -5]),
-			doneAction: 2
+			doneAction: (1 - sostenida) * 2
 		);
+		sustainedEnv = EnvGen.ar(Env.asr(atk, 1, 0.5), gate, doneAction: 2);
+		env = Select.ar(sostenida, [fixedEnv, sustainedEnv]);
 
 		// 4 harmonics per chord note, slightly stretched (string inharmonicity)
 		tone = Mix.fill(4, { |n|
@@ -63,12 +68,18 @@ Server.default = Server(
 	}).add;
 
 	// 2) String bass (Karplus-Strong pluck + a bit of sub body).
-	SynthDef(\stringBass, { |out = 0, note = 36, durMs = 1000, amp = 0.5|
-		var dur, freq, env, exc, pluck, body, sig;
+	SynthDef(\stringBass, { |out = 0, note = 36, durMs = 1000, amp = 0.5,
+		sostenida = 0, gate = 1|
+		var dur, freq, fixedEnv, sustainedEnv, env, exc, pluck, body, sig;
 		dur = durMs / 1000;
 		freq = note.midicps;
 
-		env = EnvGen.ar(Env([1, 1, 0], [dur, 0.08], [0, -4]), doneAction: 2);
+		fixedEnv = EnvGen.ar(
+			Env([1, 1, 0], [dur, 0.08], [0, -4]),
+			doneAction: (1 - sostenida) * 2
+		);
+		sustainedEnv = EnvGen.ar(Env.asr(0.005, 1, 0.08), gate, doneAction: 2);
+		env = Select.ar(sostenida, [fixedEnv, sustainedEnv]);
 
 		exc = LPF.ar(WhiteNoise.ar, 3000) * EnvGen.ar(Env.perc(0.001, 0.01));
 		pluck = Pluck.ar(exc, Impulse.ar(0), 0.1, freq.reciprocal, dur * 1.5, 0.45);
@@ -122,12 +133,47 @@ Server.default = Server(
 };
 
 // ------------------------------------------------------------- player API
-~myband[\piano] = { |self, note = 48, durMs = 1500, third = 4, amp = 0.3|
-	Synth(\classicPiano, [\note, note, \durMs, durMs, \third, third, \amp, amp]);
+~myband[\piano] = { |self, note = 48, durMs = 1500, third = 4, amp = 0.3,
+	sostenida = 0, gate = 1|
+	Synth(\classicPiano, [
+		\note, note, \durMs, durMs, \third, third, \amp, amp,
+		\sostenida, sostenida, \gate, gate
+	]);
 };
 
-~myband[\bass] = { |self, note = 36, durMs = 1000, amp = 0.5|
-	Synth(\stringBass, [\note, note, \durMs, durMs, \amp, amp]);
+~myband[\bass] = { |self, note = 36, durMs = 1000, amp = 0.5,
+	sostenida = 0, gate = 1|
+	Synth(\stringBass, [
+		\note, note, \durMs, durMs, \amp, amp,
+		\sostenida, sostenida, \gate, gate
+	]);
+};
+
+~myband[\startPiano] = { |self, note = 48, third = 4, amp = 0.3|
+	var anterior = self.activePiano.removeAt(note);
+	if(anterior.notNil) { anterior.set(\gate, 0) };
+	self.activePiano[note] = Synth(\classicPiano, [
+		\note, note, \third, third, \amp, amp,
+		\sostenida, 1, \gate, 1
+	]);
+};
+
+~myband[\stopPiano] = { |self, note = 48|
+	var syn = self.activePiano.removeAt(note);
+	if(syn.notNil) { syn.set(\gate, 0) };
+};
+
+~myband[\startBass] = { |self, note = 36, amp = 0.5|
+	var anterior = self.activeBass.removeAt(note);
+	if(anterior.notNil) { anterior.set(\gate, 0) };
+	self.activeBass[note] = Synth(\stringBass, [
+		\note, note, \amp, amp, \sostenida, 1, \gate, 1
+	]);
+};
+
+~myband[\stopBass] = { |self, note = 36|
+	var syn = self.activeBass.removeAt(note);
+	if(syn.notNil) { syn.set(\gate, 0) };
 };
 
 ~myband[\noteOn] = { |self, note = 60, ratios = #[1, 2, 3], amps = #[1, 0.5, 0.25], amp = 0.3|
