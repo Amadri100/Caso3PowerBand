@@ -188,6 +188,9 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     public Map<String, Object> opcionesConfigurables() {
         opciones.put(Constantes.OPCION_DEBUG_LOG,
                 Configuraciones.getInstance().getOpcion(Constantes.OPCION_DEBUG_LOG));
+        opciones.put(Constantes.OPCION_AMPLITUD_GENERAL,
+                Configuraciones.getInstance().getOpcion(
+                        Constantes.OPCION_AMPLITUD_GENERAL));
         return Collections.unmodifiableMap(
                 new LinkedHashMap<>(opciones));
     }
@@ -195,7 +198,8 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     @Override
     public Object consultarOpcion(String clave) {
         validarClaveOpcion(clave);
-        if (Constantes.OPCION_DEBUG_LOG.equals(clave)) {
+        if (Constantes.OPCION_DEBUG_LOG.equals(clave)
+                || Constantes.OPCION_AMPLITUD_GENERAL.equals(clave)) {
             return Configuraciones.getInstance().getOpcion(clave);
         }
         if (!opciones.containsKey(clave)) {
@@ -207,7 +211,8 @@ public final class FachadaControladorFalsa implements FachadaControlador {
     @Override
     public void establecerOpcion(String clave, Object valor) {
         validarClaveOpcion(clave);
-        if (Constantes.OPCION_DEBUG_LOG.equals(clave)) {
+        if (Constantes.OPCION_DEBUG_LOG.equals(clave)
+                || Constantes.OPCION_AMPLITUD_GENERAL.equals(clave)) {
             Configuraciones.getInstance().setOpcion(clave, valor);
             return;
         }

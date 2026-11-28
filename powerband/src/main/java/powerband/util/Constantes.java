@@ -26,6 +26,10 @@ public final class Constantes {
     public static final String CATEGORIA_INFO = "info";
     public static final String CATEGORIA_ERROR = "error";
     public static final String OPCION_DEBUG_LOG = "Información de depuración del log";
+    public static final String OPCION_AMPLITUD_GENERAL =
+            "Amplitud general de sintetizadores";
+    public static final double AMPLITUD_GENERAL_DEFECTO = 1.0;
+    public static final int MAXIMO_NODOS_SOSTENIDOS = 128;
 
     public static final int NOTA_MIDI_MINIMA = 0;
     public static final int NOTA_MIDI_MAXIMA = 127;

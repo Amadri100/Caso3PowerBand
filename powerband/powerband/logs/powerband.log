@@ -1,0 +1,2 @@
+2026-11-28T01:44:36.186036Z [error] Excepcion no capturada: IllegalStateException: fallo simulado
+2026-11-28T01:44:53.111229800Z [error] Fallo al cerrar PowerBand mediante el controlador: java.lang.IllegalStateException: fallo al desconectar

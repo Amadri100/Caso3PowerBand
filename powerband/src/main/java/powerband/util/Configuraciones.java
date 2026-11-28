@@ -18,6 +18,9 @@ public final class Configuraciones {
         this.puerto = Constantes.PUERTO_DEFECTO;
         this.opcionesModificables = new LinkedHashMap<>();
         this.opcionesModificables.put(Constantes.OPCION_DEBUG_LOG, Boolean.FALSE);
+        this.opcionesModificables.put(
+                Constantes.OPCION_AMPLITUD_GENERAL,
+                Constantes.AMPLITUD_GENERAL_DEFECTO);
     }
 
     public static Configuraciones getInstance() {
@@ -58,6 +61,25 @@ public final class Configuraciones {
     public synchronized void setOpcion(String clave, Object valor) {
         if (Constantes.OPCION_DEBUG_LOG.equals(clave) && !(valor instanceof Boolean)) {
             throw new IllegalArgumentException("La opción de depuración debe ser booleana");
+        }
+        if (Constantes.OPCION_AMPLITUD_GENERAL.equals(clave)) {
+            if (!(valor instanceof Byte
+                    || valor instanceof Short
+                    || valor instanceof Integer
+                    || valor instanceof Long
+                    || valor instanceof Float
+                    || valor instanceof Double)) {
+                throw new IllegalArgumentException(
+                        "La amplitud general debe ser numérica");
+            }
+            double amplitud = ((Number) valor).doubleValue();
+            if (!Double.isFinite(amplitud)
+                    || amplitud < Constantes.AMPLITUD_MINIMA
+                    || amplitud > Constantes.AMPLITUD_MAXIMA) {
+                throw new IllegalArgumentException(
+                        "La amplitud general debe estar entre 0 y 1");
+            }
+            valor = amplitud;
         }
         opcionesModificables.put(requireClave(clave), valor);
     }
